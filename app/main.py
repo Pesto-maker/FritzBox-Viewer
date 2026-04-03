@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -193,6 +193,35 @@ def api_fetch_with_sid(data: dict, db: Session = Depends(get_db)):
         status.last_error = str(exc)
         db.commit()
         return {"status": "error", "message": str(exc)}
+
+
+@app.get("/api/export/logs", response_class=PlainTextResponse)
+def api_export_logs(db: Session = Depends(get_db)):
+    """Export all log entries as plain text for upload to Claude chat."""
+    from datetime import timezone
+    import datetime as dt
+
+    entries = (
+        db.query(LogEntry)
+        .order_by(LogEntry.timestamp.asc())
+        .all()
+    )
+
+    lines = [
+        f"FritzBox Ereignisprotokoll — Export {dt.datetime.now(timezone.utc).strftime('%d.%m.%Y %H:%M')} UTC",
+        f"Einträge gesamt: {len(entries)}",
+        "=" * 70,
+        "",
+    ]
+    for e in entries:
+        lines.append(f"{e.timestamp.strftime('%d.%m.%y %H:%M:%S')}  [{e.category:<10}]  {e.message}")
+
+    filename = dt.datetime.now(timezone.utc).strftime("fritzbox_logs_%Y%m%d_%H%M.txt")
+    content = "\n".join(lines)
+    return PlainTextResponse(
+        content=content,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.get("/recommendations", response_class=HTMLResponse)
