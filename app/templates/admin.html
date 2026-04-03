@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="de" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FritzBox Viewer — Admin</title>
+
+  <!-- Bootstrap 5 dark -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <style>
+    :root {
+      --fb-bg:       #0d0f1a;
+      --fb-surface:  #151929;
+      --fb-surface2: #1c2035;
+      --fb-border:   #2a2f4a;
+      --fb-accent:   #4f6ef7;
+      --fb-accent2:  #6ee7f7;
+      --fb-text:     #d0d6f0;
+      --fb-muted:    #6b728e;
+    }
+
+    body {
+      background-color: var(--fb-bg);
+      color: var(--fb-text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .fb-header {
+      background: linear-gradient(135deg, #111527 0%, #1a2040 100%);
+      border-bottom: 1px solid var(--fb-border);
+      padding: 1rem 1.5rem;
+    }
+    .fb-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--fb-accent), var(--fb-accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .fb-subtitle {
+      color: var(--fb-muted);
+      font-size: 0.8rem;
+    }
+
+    /* ── Cards ───────────────────────────────────────────────── */
+    .card-dark {
+      background: var(--fb-surface);
+      border: 1px solid var(--fb-border);
+      border-radius: 0.75rem;
+    }
+
+    /* ── Form controls ───────────────────────────────────────── */
+    .form-control,
+    .form-control:focus {
+      background: var(--fb-surface2);
+      border-color: var(--fb-border);
+      color: var(--fb-text);
+    }
+    .form-control:focus {
+      border-color: var(--fb-accent);
+      box-shadow: 0 0 0 2px rgba(79, 110, 247, 0.25);
+      outline: none;
+    }
+    .form-label {
+      color: var(--fb-muted);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .form-text {
+      color: var(--fb-muted);
+      font-size: 0.78rem;
+    }
+
+    /* ── Section headings ────────────────────────────────────── */
+    .section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--fb-accent2);
+      border-bottom: 1px solid var(--fb-border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Active config badge ─────────────────────────────────── */
+    .active-value {
+      font-size: 0.75rem;
+      color: var(--fb-muted);
+      font-family: monospace;
+    }
+
+    /* ── How-to steps ────────────────────────────────────────── */
+    .how-to-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      counter-reset: steps;
+    }
+    .how-to-list li {
+      counter-increment: steps;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      color: var(--fb-muted);
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--fb-border);
+    }
+    .how-to-list li:last-child { border-bottom: none; }
+    .how-to-list li::before {
+      content: counter(steps);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      background: var(--fb-surface2);
+      border: 1px solid var(--fb-border);
+      color: var(--fb-accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    /* ── Result alerts ───────────────────────────────────────── */
+    #configResult, #sidResult { font-size: 0.85rem; }
+
+    /* ── Input group addon ───────────────────────────────────── */
+    .input-group-text {
+      background: var(--fb-surface2);
+      border-color: var(--fb-border);
+      color: var(--fb-muted);
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn-primary {
+      background-color: var(--fb-accent);
+      border-color: var(--fb-accent);
+    }
+    .btn-primary:hover {
+      background-color: #3d5be8;
+      border-color: #3d5be8;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ HEADER -->
+<header class="fb-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+  <div>
+    <div class="fb-logo"><i class="bi bi-router me-2"></i>FritzBox Viewer</div>
+    <div class="fb-subtitle">Administration &amp; Konfiguration</div>
+  </div>
+  <a href="/" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Zur Ansicht
+  </a>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════ MAIN -->
+<main class="container py-4" style="max-width: 720px;">
+
+  <!-- ── Section 1: FritzBox Connection Settings ─────────────────── -->
+  <div class="card-dark p-4 mb-4">
+    <div class="section-title">
+      <i class="bi bi-hdd-network me-2"></i>FritzBox Verbindung
+    </div>
+
+    <form id="configForm" onsubmit="saveConfig(event)">
+      <div class="row g-3">
+
+        <!-- Host -->
+        <div class="col-12">
+          <label class="form-label" for="fritz_host">Host / IP-Adresse</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-globe"></i></span>
+            <input type="text" id="fritz_host" name="fritz_host"
+                   class="form-control font-monospace"
+                   value="{{ config.fritz_host }}"
+                   placeholder="fritz.box"
+                   autocomplete="off" />
+          </div>
+          <div class="form-text">Hostname oder IP der FritzBox (Standard: fritz.box)</div>
+        </div>
+
+        <!-- Username -->
+        <div class="col-sm-6">
+          <label class="form-label" for="fritz_user">Benutzername</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" id="fritz_user" name="fritz_user"
+                   class="form-control"
+                   value="{{ config.fritz_user }}"
+                   placeholder="(leer = Standard)"
+                   autocomplete="username" />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="col-sm-6">
+          <label class="form-label" for="fritz_password">Passwort</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" id="fritz_password" name="fritz_password"
+                   class="form-control"
+                   value="{{ config.fritz_password }}"
+                   placeholder="Passwort eingeben"
+                   autocomplete="current-password"
+                   data-changed="false"
+                   oninput="this.dataset.changed='true'" />
+          </div>
+          <div class="form-text">
+            {% if config.fritz_password %}
+              Aktuell gesetzt — nur eingeben wenn ändern
+            {% else %}
+              Noch kein Passwort gespeichert
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Fetch interval -->
+        <div class="col-sm-6">
+          <label class="form-label" for="fetch_interval">Abrufintervall (Sekunden)</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-clock"></i></span>
+            <input type="number" id="fetch_interval" name="fetch_interval"
+                   class="form-control"
+                   value="{{ config.fetch_interval }}"
+                   min="60" max="86400"
+                   placeholder="300" />
+            <span class="input-group-text">s</span>
+          </div>
+          <div class="form-text">Minimum 60 Sekunden. Neustart erforderlich für Wirkung.</div>
+        </div>
+
+      </div><!-- /row -->
+
+      <div class="d-flex align-items-center gap-3 mt-4">
+        <button type="submit" class="btn btn-primary" id="btnSaveConfig">
+          <i class="bi bi-floppy me-1"></i>Speichern
+        </button>
+        <div id="configResult" class="d-none flex-grow-1"></div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Section 2: Manual SID Fetch ───────────────────────────────── -->
+  <div class="card-dark p-4 mb-4">
+    <div class="section-title">
+      <i class="bi bi-key me-2"></i>Manueller SID-Abruf
+    </div>
+
+    <p class="text-muted small mb-3">
+      Falls der automatische Login nicht funktioniert, SID aus dem Browser holen und hier
+      eintragen. Die SID wird gespeichert und für zukünftige automatische Abrufe verwendet.
+    </p>
+
+    <!-- How-to -->
+    <div class="card-dark p-3 mb-4" style="background: var(--fb-surface2);">
+      <div class="small fw-semibold mb-2" style="color: var(--fb-muted);">
+        <i class="bi bi-info-circle me-1"></i>So ermitteln Sie die SID:
+      </div>
+      <ul class="how-to-list">
+        <li>
+          Browser öffnen &rarr; <code>http://fritz.box</code> &rarr; einloggen
+        </li>
+        <li>
+          <kbd>F12</kbd> drücken &rarr; Tab <strong>Netzwerk</strong> öffnen
+        </li>
+        <li>
+          Beliebige Seite neu laden (z.B. <code>http://fritz.box/</code>)
+        </li>
+        <li>
+          In den Request-URLs nach <code>sid=</code> suchen — die 16-stellige Hex-SID kopieren
+        </li>
+      </ul>
+    </div>
+
+    <!-- SID input -->
+    <div class="mb-3">
+      <label class="form-label" for="sidInput">Session-ID (SID)</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-fingerprint"></i></span>
+        <input type="text" id="sidInput" class="form-control font-monospace"
+               placeholder="z.B. a1b2c3d4e5f60789"
+               maxlength="16"
+               autocomplete="off"
+               spellcheck="false" />
+        <button class="btn btn-primary" id="btnFetchSid" onclick="fetchWithSid()">
+          <i class="bi bi-cloud-download me-1"></i>Abrufen &amp; Speichern
+        </button>
+      </div>
+      <div class="form-text">
+        16-stellige Hex-SID aus der aktiven FritzBox-Session.
+        {% if config.manual_sid %}
+          Aktuell gespeichert: <code class="text-info">{{ config.manual_sid[:8] }}…</code>
+        {% endif %}
+      </div>
+    </div>
+
+    <div id="sidResult" class="d-none"></div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════════════ SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+  // ── Save connection config ────────────────────────────────────────
+  async function saveConfig(event) {
+    event.preventDefault();
+    const btn    = document.getElementById("btnSaveConfig");
+    const result = document.getElementById("configResult");
+
+    const pwField = document.getElementById("fritz_password");
+    const payload = {
+      fritz_host:      document.getElementById("fritz_host").value.trim(),
+      fritz_user:      document.getElementById("fritz_user").value.trim(),
+      fetch_interval:  document.getElementById("fetch_interval").value.trim(),
+    };
+
+    // Only include password if the user actually changed it
+    if (pwField.dataset.changed === "true") {
+      payload.fritz_password = pwField.value;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Speichert…';
+    result.className = "d-none";
+
+    try {
+      const r    = await fetch("/api/admin/config", {
+        method:  "POST",
+        headers: {"Content-Type": "application/json"},
+        body:    JSON.stringify(payload),
+      });
+      const data = await r.json();
+
+      if (data.status === "ok") {
+        showResult("configResult", "success",
+          '<i class="bi bi-check-circle me-2"></i>Einstellungen gespeichert.');
+        // Reset changed flag after successful save
+        pwField.dataset.changed = "false";
+      } else {
+        showResult("configResult", "danger",
+          '<i class="bi bi-exclamation-triangle me-2"></i>' + (data.message || "Fehler beim Speichern."));
+      }
+    } catch (e) {
+      showResult("configResult", "danger", "Netzwerkfehler: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Speichern';
+    }
+  }
+
+  // ── Fetch with manual SID ─────────────────────────────────────────
+  async function fetchWithSid() {
+    const sid = document.getElementById("sidInput").value.trim();
+    const btn = document.getElementById("btnFetchSid");
+
+    if (!sid) {
+      showResult("sidResult", "warning",
+        '<i class="bi bi-exclamation-circle me-2"></i>Bitte eine SID eingeben.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Lädt…';
+    document.getElementById("sidResult").className = "d-none";
+
+    try {
+      const r    = await fetch("/api/admin/fetch-with-sid", {
+        method:  "POST",
+        headers: {"Content-Type": "application/json"},
+        body:    JSON.stringify({sid}),
+      });
+      const data = await r.json();
+
+      if (data.status === "ok") {
+        showResult("sidResult", "success",
+          '<i class="bi bi-check-circle me-2"></i>' +
+          `Erfolgreich: <strong>${data.total_received}</strong> Einträge empfangen, ` +
+          `<strong>${data.new_entries}</strong> neu gespeichert. ` +
+          `SID wurde für zukünftige automatische Abrufe gespeichert.`
+        );
+      } else {
+        showResult("sidResult", "danger",
+          '<i class="bi bi-exclamation-triangle me-2"></i>' + (data.message || "Unbekannter Fehler."));
+      }
+    } catch (e) {
+      showResult("sidResult", "danger", "Netzwerkfehler: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-cloud-download me-1"></i>Abrufen &amp; Speichern';
+    }
+  }
+
+  // ── Helper ────────────────────────────────────────────────────────
+  function showResult(elementId, type, html) {
+    const el = document.getElementById(elementId);
+    el.className = `alert alert-${type} py-2 mb-0`;
+    el.innerHTML = html;
+  }
+
+  // Enter key triggers SID fetch
+  document.getElementById("sidInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") fetchWithSid();
+  });
+
+</script>
+</body>
+</html>
