@@ -27,3 +27,16 @@ class AppConfig(Base):
 
     key   = Column(String, primary_key=True)
     value = Column(String, nullable=True)
+
+
+class AiRecommendation(Base):
+    __tablename__ = "ai_recommendations"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    run_id      = Column(Integer, index=True, nullable=False)
+    created_at  = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    title       = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    severity    = Column(String, default="info")   # info | warning | critical
+    category    = Column(String, nullable=True)
+    status      = Column(String, default="pending")  # pending | accepted | rejected

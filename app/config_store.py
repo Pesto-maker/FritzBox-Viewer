@@ -7,11 +7,12 @@ from .database import SessionLocal
 from .models import AppConfig
 
 _DEFAULTS = {
-    "fritz_host":      ("FRITZ_HOST",     "fritz.box"),
-    "fritz_user":      ("FRITZ_USER",     ""),
-    "fritz_password":  ("FRITZ_PASSWORD", ""),
-    "fetch_interval":  ("FETCH_INTERVAL", "300"),
-    "manual_sid":      (None,             ""),
+    "fritz_host":         ("FRITZ_HOST",         "fritz.box"),
+    "fritz_user":         ("FRITZ_USER",         ""),
+    "fritz_password":     ("FRITZ_PASSWORD",     ""),
+    "fetch_interval":     ("FETCH_INTERVAL",     "300"),
+    "manual_sid":         (None,                 ""),
+    "anthropic_api_key":  ("ANTHROPIC_API_KEY",  ""),
 }
 
 
@@ -43,11 +44,12 @@ def set(key: str, value: str):
 
 
 def get_all_public() -> dict:
-    """Return all config values (password masked)."""
+    """Return all config values (secrets masked)."""
     return {
-        "fritz_host":     get("fritz_host"),
-        "fritz_user":     get("fritz_user"),
-        "fritz_password": "••••••••" if get("fritz_password") else "",
-        "fetch_interval": get("fetch_interval"),
-        "manual_sid":     get("manual_sid"),
+        "fritz_host":        get("fritz_host"),
+        "fritz_user":        get("fritz_user"),
+        "fritz_password":    "••••••••" if get("fritz_password") else "",
+        "fetch_interval":    get("fetch_interval"),
+        "manual_sid":        get("manual_sid"),
+        "anthropic_api_key": "••••••••" if get("anthropic_api_key") else "",
     }

@@ -143,11 +143,11 @@ def admin_page(request: Request):
 @app.post("/api/admin/config")
 def api_save_config(data: dict):
     """Save FritzBox connection settings."""
-    allowed = {"fritz_host", "fritz_user", "fritz_password", "fetch_interval"}
+    allowed = {"fritz_host", "fritz_user", "fritz_password", "fetch_interval", "anthropic_api_key"}
     for key, value in data.items():
         if key in allowed:
-            # Don't overwrite password if placeholder was sent
-            if key == "fritz_password" and set(value) == {"•"}:
+            # Don't overwrite secrets if placeholder was sent
+            if key in ("fritz_password", "anthropic_api_key") and set(value) == {"•"}:
                 continue
             cfg.set(key, str(value).strip())
     return {"status": "ok"}
@@ -193,6 +193,60 @@ def api_fetch_with_sid(data: dict, db: Session = Depends(get_db)):
         status.last_error = str(exc)
         db.commit()
         return {"status": "error", "message": str(exc)}
+
+
+@app.get("/recommendations", response_class=HTMLResponse)
+def recommendations_page(request: Request):
+    return templates.TemplateResponse("recommendations.html", {"request": request})
+
+
+@app.post("/api/ai/analyze")
+def api_ai_analyze(db: Session = Depends(get_db)):
+    """Trigger AI analysis of recent logs."""
+    from .ai_analyzer import run_analysis
+    try:
+        recs = run_analysis(db)
+        return {"status": "ok", "count": len(recs)}
+    except Exception as exc:
+        logger.error("AI-Analyse fehlgeschlagen: %s", exc)
+        return {"status": "error", "message": str(exc)}
+
+
+@app.get("/api/ai/recommendations")
+def api_get_recommendations(db: Session = Depends(get_db)):
+    from .models import AiRecommendation
+    recs = (
+        db.query(AiRecommendation)
+        .order_by(AiRecommendation.run_id.desc(), AiRecommendation.id.asc())
+        .all()
+    )
+    return [
+        {
+            "id":          r.id,
+            "run_id":      r.run_id,
+            "created_at":  r.created_at.isoformat(),
+            "title":       r.title,
+            "description": r.description,
+            "severity":    r.severity,
+            "category":    r.category,
+            "status":      r.status,
+        }
+        for r in recs
+    ]
+
+
+@app.patch("/api/ai/recommendations/{rec_id}")
+def api_update_recommendation(rec_id: int, data: dict, db: Session = Depends(get_db)):
+    from .models import AiRecommendation
+    rec = db.query(AiRecommendation).filter(AiRecommendation.id == rec_id).first()
+    if not rec:
+        return {"status": "error", "message": "Nicht gefunden"}
+    new_status = data.get("status")
+    if new_status not in ("pending", "accepted", "rejected"):
+        return {"status": "error", "message": "Ungültiger Status"}
+    rec.status = new_status
+    db.commit()
+    return {"status": "ok"}
 
 
 @app.get("/api/debug")

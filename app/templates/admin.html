@@ -220,6 +220,42 @@
     </form>
   </div>
 
+  <!-- ── Section 2: KI-Einstellungen ───────────────────────────────────── -->
+  <div class="card-dark p-4 mb-4">
+    <div class="section-title">
+      <i class="bi bi-robot me-2"></i>KI-Einstellungen
+    </div>
+
+    <form id="aiConfigForm" onsubmit="saveAiConfig(event)">
+      <div class="col-12">
+        <label class="form-label" for="anthropic_api_key">Anthropic API-Key</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-key"></i></span>
+          <input type="password" id="anthropic_api_key" name="anthropic_api_key"
+                 class="form-control font-monospace"
+                 value="{{ config.anthropic_api_key }}"
+                 placeholder="sk-ant-…"
+                 autocomplete="off"
+                 data-changed="false"
+                 oninput="this.dataset.changed='true'" />
+        </div>
+        <div class="form-text">
+          {% if config.anthropic_api_key %}
+            Aktuell gesetzt — nur eingeben wenn ändern.
+          {% else %}
+            API-Key von <a href="https://console.anthropic.com" target="_blank" class="text-info">console.anthropic.com</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-3 mt-4">
+        <button type="submit" class="btn btn-primary" id="btnSaveAiConfig">
+          <i class="bi bi-floppy me-1"></i>Speichern
+        </button>
+        <div id="aiConfigResult" class="d-none flex-grow-1"></div>
+      </div>
+    </form>
+  </div>
 
 </main>
 
@@ -268,6 +304,49 @@
       }
     } catch (e) {
       showResult("configResult", "danger", "Netzwerkfehler: " + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Speichern';
+    }
+  }
+
+  // ── Save AI config ────────────────────────────────────────────────
+  async function saveAiConfig(event) {
+    event.preventDefault();
+    const btn    = document.getElementById("btnSaveAiConfig");
+    const keyField = document.getElementById("anthropic_api_key");
+    const payload = {};
+
+    if (keyField.dataset.changed === "true") {
+      payload.anthropic_api_key = keyField.value;
+    }
+
+    if (!Object.keys(payload).length) {
+      showResult("aiConfigResult", "info", '<i class="bi bi-info-circle me-2"></i>Keine Änderungen.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Speichert…';
+    document.getElementById("aiConfigResult").className = "d-none";
+
+    try {
+      const r    = await fetch("/api/admin/config", {
+        method:  "POST",
+        headers: {"Content-Type": "application/json"},
+        body:    JSON.stringify(payload),
+      });
+      const data = await r.json();
+      if (data.status === "ok") {
+        showResult("aiConfigResult", "success",
+          '<i class="bi bi-check-circle me-2"></i>API-Key gespeichert.');
+        keyField.dataset.changed = "false";
+      } else {
+        showResult("aiConfigResult", "danger",
+          '<i class="bi bi-exclamation-triangle me-2"></i>' + (data.message || "Fehler."));
+      }
+    } catch (e) {
+      showResult("aiConfigResult", "danger", "Netzwerkfehler: " + e.message);
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Speichern';
