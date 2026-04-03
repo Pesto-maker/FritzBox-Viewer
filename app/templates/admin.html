@@ -99,43 +99,8 @@
       font-family: monospace;
     }
 
-    /* ── How-to steps ────────────────────────────────────────── */
-    .how-to-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      counter-reset: steps;
-    }
-    .how-to-list li {
-      counter-increment: steps;
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      padding: 0.5rem 0;
-      color: var(--fb-muted);
-      font-size: 0.85rem;
-      border-bottom: 1px solid var(--fb-border);
-    }
-    .how-to-list li:last-child { border-bottom: none; }
-    .how-to-list li::before {
-      content: counter(steps);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      width: 1.5rem;
-      height: 1.5rem;
-      border-radius: 50%;
-      background: var(--fb-surface2);
-      border: 1px solid var(--fb-border);
-      color: var(--fb-accent);
-      font-size: 0.75rem;
-      font-weight: 700;
-      margin-top: 1px;
-    }
-
     /* ── Result alerts ───────────────────────────────────────── */
-    #configResult, #sidResult { font-size: 0.85rem; }
+    #configResult { font-size: 0.85rem; }
 
     /* ── Input group addon ───────────────────────────────────── */
     .input-group-text {
@@ -255,62 +220,6 @@
     </form>
   </div>
 
-  <!-- ── Section 2: Manual SID Fetch ───────────────────────────────── -->
-  <div class="card-dark p-4 mb-4">
-    <div class="section-title">
-      <i class="bi bi-key me-2"></i>Manueller SID-Abruf
-    </div>
-
-    <p class="text-muted small mb-3">
-      Falls der automatische Login nicht funktioniert, SID aus dem Browser holen und hier
-      eintragen. Die SID wird gespeichert und für zukünftige automatische Abrufe verwendet.
-    </p>
-
-    <!-- How-to -->
-    <div class="card-dark p-3 mb-4" style="background: var(--fb-surface2);">
-      <div class="small fw-semibold mb-2" style="color: var(--fb-muted);">
-        <i class="bi bi-info-circle me-1"></i>So ermitteln Sie die SID:
-      </div>
-      <ul class="how-to-list">
-        <li>
-          Browser öffnen &rarr; <code>http://fritz.box</code> &rarr; einloggen
-        </li>
-        <li>
-          <kbd>F12</kbd> drücken &rarr; Tab <strong>Netzwerk</strong> öffnen
-        </li>
-        <li>
-          Beliebige Seite neu laden (z.B. <code>http://fritz.box/</code>)
-        </li>
-        <li>
-          In den Request-URLs nach <code>sid=</code> suchen — die 16-stellige Hex-SID kopieren
-        </li>
-      </ul>
-    </div>
-
-    <!-- SID input -->
-    <div class="mb-3">
-      <label class="form-label" for="sidInput">Session-ID (SID)</label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="bi bi-fingerprint"></i></span>
-        <input type="text" id="sidInput" class="form-control font-monospace"
-               placeholder="z.B. a1b2c3d4e5f60789"
-               maxlength="16"
-               autocomplete="off"
-               spellcheck="false" />
-        <button class="btn btn-primary" id="btnFetchSid" onclick="fetchWithSid()">
-          <i class="bi bi-cloud-download me-1"></i>Abrufen &amp; Speichern
-        </button>
-      </div>
-      <div class="form-text">
-        16-stellige Hex-SID aus der aktiven FritzBox-Session.
-        {% if config.manual_sid %}
-          Aktuell gespeichert: <code class="text-info">{{ config.manual_sid[:8] }}…</code>
-        {% endif %}
-      </div>
-    </div>
-
-    <div id="sidResult" class="d-none"></div>
-  </div>
 
 </main>
 
@@ -365,59 +274,12 @@
     }
   }
 
-  // ── Fetch with manual SID ─────────────────────────────────────────
-  async function fetchWithSid() {
-    const sid = document.getElementById("sidInput").value.trim();
-    const btn = document.getElementById("btnFetchSid");
-
-    if (!sid) {
-      showResult("sidResult", "warning",
-        '<i class="bi bi-exclamation-circle me-2"></i>Bitte eine SID eingeben.');
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Lädt…';
-    document.getElementById("sidResult").className = "d-none";
-
-    try {
-      const r    = await fetch("/api/admin/fetch-with-sid", {
-        method:  "POST",
-        headers: {"Content-Type": "application/json"},
-        body:    JSON.stringify({sid}),
-      });
-      const data = await r.json();
-
-      if (data.status === "ok") {
-        showResult("sidResult", "success",
-          '<i class="bi bi-check-circle me-2"></i>' +
-          `Erfolgreich: <strong>${data.total_received}</strong> Einträge empfangen, ` +
-          `<strong>${data.new_entries}</strong> neu gespeichert. ` +
-          `SID wurde für zukünftige automatische Abrufe gespeichert.`
-        );
-      } else {
-        showResult("sidResult", "danger",
-          '<i class="bi bi-exclamation-triangle me-2"></i>' + (data.message || "Unbekannter Fehler."));
-      }
-    } catch (e) {
-      showResult("sidResult", "danger", "Netzwerkfehler: " + e.message);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="bi bi-cloud-download me-1"></i>Abrufen &amp; Speichern';
-    }
-  }
-
   // ── Helper ────────────────────────────────────────────────────────
   function showResult(elementId, type, html) {
     const el = document.getElementById(elementId);
     el.className = `alert alert-${type} py-2 mb-0`;
     el.innerHTML = html;
   }
-
-  // Enter key triggers SID fetch
-  document.getElementById("sidInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") fetchWithSid();
-  });
 
 </script>
 </body>
