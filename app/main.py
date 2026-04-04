@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from .database import Base, engine, get_db, run_migrations
 from .fritzbox import run_connection_check
-from .models import FetchStatus, LogEntry, AiProblem, AiMeasure
+from .models import FetchStatus, LogEntry, AiProblem, AiMeasure, AiComment
 from .scheduler import fetch_and_store_logs, start_scheduler
 from . import config_store as cfg
 
@@ -247,9 +247,16 @@ def api_export_full(db: Session = Depends(get_db)):
         .all()
     )
     measures = db.query(AiMeasure).all()
+    all_comments = db.query(AiComment).order_by(AiComment.created_at.asc()).all()
+
     measures_by_problem: dict[int, list] = {}
     for m in measures:
         measures_by_problem.setdefault(m.problem_id, []).append(m)
+
+    comments_by_parent: dict[tuple, list] = {}
+    for c in all_comments:
+        key = (c.parent_type, c.parent_id)
+        comments_by_parent.setdefault(key, []).append(c)
 
     SEV_LABEL = {"critical": "KRITISCH", "warning": "WARNUNG", "info": "INFO"}
     STATUS_LABEL = {
@@ -258,6 +265,16 @@ def api_export_full(db: Session = Depends(get_db)):
         "success": "erfolgreich umgesetzt",
         "failed": "umgesetzt, nicht erfolgreich",
     }
+
+    def fmt_comments(parent_type, parent_id, indent):
+        clist = comments_by_parent.get((parent_type, parent_id), [])
+        if not clist:
+            return []
+        out = [f"{indent}Kommentare:"]
+        for c in clist:
+            ts = c.created_at.strftime("%d.%m.%y %H:%M")
+            out.append(f"{indent}  [{ts}] {c.text}")
+        return out
 
     lines = [
         "=== FritzBox Viewer — Vollständiger Export ===",
@@ -274,7 +291,6 @@ def api_export_full(db: Session = Depends(get_db)):
     if not problems:
         lines += ["", "(Noch keine Probleme erfasst)"]
     else:
-        # Group by run_id
         run_ids: list[int] = []
         probs_by_run: dict[int, list] = {}
         for p in problems:
@@ -289,26 +305,26 @@ def api_export_full(db: Session = Depends(get_db)):
             for p in probs_by_run[run_id]:
                 sev = SEV_LABEL.get(p.severity, p.severity.upper())
                 status_lbl = STATUS_LABEL.get(p.status, p.status)
-                comment_lbl = f'"{p.comment}"' if p.comment else "-"
                 lines += [
                     "",
                     f"[{sev}] {p.title}",
-                    f"  Status: {status_lbl} | Kommentar: {comment_lbl}",
+                    f"  Status: {status_lbl}",
                     f"  Identifiziert am: {p.created_at.strftime('%d.%m.%Y %H:%M:%S')} UTC",
                     f"  Kategorie: {p.category or '-'}",
                     f"  Beschreibung: {p.description}",
                 ]
+                lines += fmt_comments("problem", p.id, "  ")
                 p_measures = measures_by_problem.get(p.id, [])
                 if p_measures:
                     lines.append("  Maßnahmen:")
                     for i, m in enumerate(p_measures, 1):
                         m_status = STATUS_LABEL.get(m.status, m.status)
-                        m_comment = f'"{m.comment}"' if m.comment else "-"
                         lines += [
                             f"  [{i}] {m.title}",
-                            f"      Status: {m_status} | Kommentar: {m_comment}",
+                            f"      Status: {m_status}",
                             f"      Beschreibung: {m.description}",
                         ]
+                        lines += fmt_comments("measure", m.id, "      ")
 
     filename = dt.datetime.now(timezone.utc).strftime("fritzbox_vollexport_%Y%m%d_%H%M.txt")
     return PlainTextResponse(
@@ -378,9 +394,21 @@ def api_get_problems(db: Session = Depends(get_db)):
         .all()
     )
     measures = db.query(AiMeasure).all()
+    all_comments = db.query(AiComment).order_by(AiComment.created_at.asc()).all()
+
     measures_by_problem: dict[int, list] = {}
     for m in measures:
         measures_by_problem.setdefault(m.problem_id, []).append(m)
+
+    comments_by_parent: dict[tuple, list] = {}
+    for c in all_comments:
+        comments_by_parent.setdefault((c.parent_type, c.parent_id), []).append(c)
+
+    def serialise_comments(parent_type, parent_id):
+        return [
+            {"id": c.id, "text": c.text, "created_at": c.created_at.isoformat()}
+            for c in comments_by_parent.get((parent_type, parent_id), [])
+        ]
 
     return [
         {
@@ -392,15 +420,15 @@ def api_get_problems(db: Session = Depends(get_db)):
             "severity":    p.severity,
             "category":    p.category,
             "status":      p.status,
-            "comment":     p.comment,
+            "comments":    serialise_comments("problem", p.id),
             "measures": [
                 {
                     "id":          m.id,
                     "title":       m.title,
                     "description": m.description,
                     "status":      m.status,
-                    "comment":     m.comment,
                     "created_at":  m.created_at.isoformat(),
+                    "comments":    serialise_comments("measure", m.id),
                 }
                 for m in measures_by_problem.get(p.id, [])
             ],
@@ -418,8 +446,6 @@ def api_update_problem(problem_id: int, data: dict, db: Session = Depends(get_db
         if data["status"] not in ("pending", "rejected", "success", "failed"):
             return {"status": "error", "message": "Ungültiger Status"}
         p.status = data["status"]
-    if "comment" in data:
-        p.comment = data["comment"] or None
     db.commit()
     return {"status": "ok"}
 
@@ -433,8 +459,40 @@ def api_update_measure(measure_id: int, data: dict, db: Session = Depends(get_db
         if data["status"] not in ("pending", "rejected", "success", "failed"):
             return {"status": "error", "message": "Ungültiger Status"}
         m.status = data["status"]
-    if "comment" in data:
-        m.comment = data["comment"] or None
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/api/ai/problems/{problem_id}/comments")
+def api_add_problem_comment(problem_id: int, data: dict, db: Session = Depends(get_db)):
+    text = (data.get("text") or "").strip()
+    if not text:
+        return {"status": "error", "message": "Kommentar darf nicht leer sein"}
+    if not db.query(AiProblem).filter(AiProblem.id == problem_id).first():
+        return {"status": "error", "message": "Problem nicht gefunden"}
+    db.add(AiComment(parent_type="problem", parent_id=problem_id, text=text))
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.post("/api/ai/measures/{measure_id}/comments")
+def api_add_measure_comment(measure_id: int, data: dict, db: Session = Depends(get_db)):
+    text = (data.get("text") or "").strip()
+    if not text:
+        return {"status": "error", "message": "Kommentar darf nicht leer sein"}
+    if not db.query(AiMeasure).filter(AiMeasure.id == measure_id).first():
+        return {"status": "error", "message": "Maßnahme nicht gefunden"}
+    db.add(AiComment(parent_type="measure", parent_id=measure_id, text=text))
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.delete("/api/ai/comments/{comment_id}")
+def api_delete_comment(comment_id: int, db: Session = Depends(get_db)):
+    c = db.query(AiComment).filter(AiComment.id == comment_id).first()
+    if not c:
+        return {"status": "error", "message": "Nicht gefunden"}
+    db.delete(c)
     db.commit()
     return {"status": "ok"}
 

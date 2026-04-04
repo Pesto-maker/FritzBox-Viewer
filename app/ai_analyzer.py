@@ -13,7 +13,7 @@ import time
 import anthropic
 
 from . import config_store
-from .models import AiProblem, AiMeasure, LogEntry
+from .models import AiProblem, AiMeasure, AiComment, LogEntry
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +48,18 @@ def run_analysis(db) -> list[dict]:
         .order_by(AiProblem.created_at.desc())
         .all()
     )
-    prev_measures = (
-        db.query(AiMeasure)
-        .all()
-    )
-    # Group measures by problem_id for easy lookup
+    prev_measures = db.query(AiMeasure).all()
+    all_comments  = db.query(AiComment).order_by(AiComment.created_at.asc()).all()
+
     measures_by_problem: dict[int, list] = {}
     for m in prev_measures:
         measures_by_problem.setdefault(m.problem_id, []).append(m)
 
-    prompt = _build_prompt(logs, prev_problems, measures_by_problem)
+    comments_by_parent: dict[tuple, list] = {}
+    for c in all_comments:
+        comments_by_parent.setdefault((c.parent_type, c.parent_id), []).append(c)
+
+    prompt = _build_prompt(logs, prev_problems, measures_by_problem, comments_by_parent)
     logger.info(
         "AI-Analyse: %d Logeinträge, %d frühere Probleme.",
         len(logs), len(prev_problems),
@@ -106,7 +108,19 @@ def run_analysis(db) -> list[dict]:
 # Prompt builder
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict) -> str:
+def _fmt_comments(parent_type: str, parent_id: int, comments_by_parent: dict, indent: str) -> str:
+    clist = comments_by_parent.get((parent_type, parent_id), [])
+    if not clist:
+        return ""
+    lines = []
+    for c in clist:
+        ts = c.created_at.strftime("%d.%m.%y %H:%M")
+        lines.append(f'{indent}[{ts}] {c.text}')
+    return "\n" + "\n".join(lines)
+
+
+def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict,
+                  comments_by_parent: dict) -> str:
     log_lines = "\n".join(
         f"{e.timestamp.strftime('%d.%m.%y %H:%M:%S')} [{e.category}] {e.message}"
         for e in logs
@@ -121,41 +135,29 @@ def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict) ->
 
         prev_section = "\n\n## Bisherige Probleme und Maßnahmen\n"
 
+        def fmt_problem(p):
+            out = f"- {p.title}"
+            out += _fmt_comments("problem", p.id, comments_by_parent, "    ")
+            for m in measures_by_problem.get(p.id, []):
+                out += f"\n  → Maßnahme ({m.status}): {m.title}"
+                out += _fmt_comments("measure", m.id, comments_by_parent, "      ")
+            return out
+
         if success:
             prev_section += "\n**Erfolgreich umgesetzt — nicht erneut empfehlen:**\n"
-            for p in success:
-                comment = f' [Kommentar: "{p.comment}"]' if p.comment else ""
-                prev_section += f"- {p.title}{comment}\n"
-                for m in measures_by_problem.get(p.id, []):
-                    m_comment = f' [Kommentar: "{m.comment}"]' if m.comment else ""
-                    prev_section += f"  → Maßnahme ({m.status}): {m.title}{m_comment}\n"
+            prev_section += "\n".join(fmt_problem(p) for p in success) + "\n"
 
         if failed:
             prev_section += "\n**Umgesetzt aber nicht erfolgreich — alternative Maßnahmen vorschlagen:**\n"
-            for p in failed:
-                comment = f' [Kommentar: "{p.comment}"]' if p.comment else ""
-                prev_section += f"- {p.title}{comment}\n"
-                for m in measures_by_problem.get(p.id, []):
-                    m_comment = f' [Kommentar: "{m.comment}"]' if m.comment else ""
-                    prev_section += f"  → Maßnahme ({m.status}): {m.title}{m_comment}\n"
+            prev_section += "\n".join(fmt_problem(p) for p in failed) + "\n"
 
         if rejected:
             prev_section += "\n**Abgelehnt — nur bei kritischem Sicherheitsrisiko erneut empfehlen:**\n"
-            for p in rejected:
-                comment = f' [Kommentar: "{p.comment}"]' if p.comment else ""
-                prev_section += f"- {p.title}{comment}\n"
-                for m in measures_by_problem.get(p.id, []):
-                    m_comment = f' [Kommentar: "{m.comment}"]' if m.comment else ""
-                    prev_section += f"  → Maßnahme ({m.status}): {m.title}{m_comment}\n"
+            prev_section += "\n".join(fmt_problem(p) for p in rejected) + "\n"
 
         if pending:
             prev_section += "\n**Noch offen:**\n"
-            for p in pending:
-                comment = f' [Kommentar: "{p.comment}"]' if p.comment else ""
-                prev_section += f"- {p.title}{comment}\n"
-                for m in measures_by_problem.get(p.id, []):
-                    m_comment = f' [Kommentar: "{m.comment}"]' if m.comment else ""
-                    prev_section += f"  → Maßnahme ({m.status}): {m.title}{m_comment}\n"
+            prev_section += "\n".join(fmt_problem(p) for p in pending) + "\n"
 
     return f"""Du bist ein Netzwerk- und Sicherheitsexperte und analysierst FritzBox-Ereignisprotokolle für einen Heimnetzwerk-Betreiber.
 

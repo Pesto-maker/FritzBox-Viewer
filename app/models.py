@@ -33,14 +33,13 @@ class AiProblem(Base):
     __tablename__ = "ai_problems"
 
     id          = Column(Integer, primary_key=True, index=True)
-    run_id      = Column(Integer, index=True, nullable=False)  # Unix-Timestamp der Analyse
+    run_id      = Column(Integer, index=True, nullable=False)
     created_at  = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     title       = Column(String, nullable=False)
     description = Column(String, nullable=False)
     severity    = Column(String, default="info")    # info | warning | critical
     category    = Column(String, nullable=True)
     status      = Column(String, default="pending") # pending | rejected | success | failed
-    comment     = Column(String, nullable=True)
 
 
 class AiMeasure(Base):
@@ -52,4 +51,13 @@ class AiMeasure(Base):
     title       = Column(String, nullable=False)
     description = Column(String, nullable=False)
     status      = Column(String, default="pending") # pending | rejected | success | failed
-    comment     = Column(String, nullable=True)
+
+
+class AiComment(Base):
+    __tablename__ = "ai_comments"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    parent_type = Column(String, nullable=False)   # "problem" | "measure"
+    parent_id   = Column(Integer, nullable=False, index=True)
+    created_at  = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    text        = Column(String, nullable=False)

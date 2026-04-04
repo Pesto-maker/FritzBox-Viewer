@@ -700,11 +700,6 @@ function renderProblemCard(p) {
   const date = new Date(p.created_at).toLocaleString('de-DE',
     {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
 
-  const commentDisplay = p.comment
-    ? `<div class="mt-1" style="font-size:.73rem;color:var(--fb-muted);font-style:italic">
-         <i class="bi bi-chat-left-text me-1"></i>${escHtml(p.comment)}
-       </div>` : '';
-
   const statusBtns = p.status === 'pending'
     ? `<button class="btn btn-sm btn-outline-success" style="font-size:.72rem" onclick="updateProblem(${p.id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
        <button class="btn btn-sm btn-outline-warning" style="font-size:.72rem" onclick="updateProblem(${p.id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
@@ -727,20 +722,10 @@ function renderProblemCard(p) {
         <span style="font-size:.68rem;color:var(--fb-muted);white-space:nowrap">${date}</span>
       </div>
       <div style="font-size:.8rem;color:#b0b8d8;margin-bottom:.4rem">${escHtml(p.description)}</div>
-      ${commentDisplay}
+      ${renderComments(p.comments, 'problem', p.id)}
       ${measuresHtml}
       <div class="d-flex flex-wrap gap-1 align-items-center mt-2 pt-2" style="border-top:1px solid var(--fb-border)">
         ${statusBtns}
-        <div class="d-flex gap-1 ms-auto">
-          <input type="text" class="form-control form-control-sm" id="prob-comment-${p.id}"
-                 placeholder="Kommentar…" value="${escHtml(p.comment || '')}"
-                 style="font-size:.72rem;background:var(--fb-surface);border-color:var(--fb-border);
-                        color:var(--fb-text);width:160px" />
-          <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem"
-                  onclick="saveComment('problem',${p.id})" title="Kommentar speichern">
-            <i class="bi bi-floppy"></i>
-          </button>
-        </div>
       </div>
     </div>`;
 }
@@ -748,11 +733,6 @@ function renderProblemCard(p) {
 function renderMeasure(m) {
   const borderColor = { pending:'var(--fb-accent)', success:'#22c55e', rejected:'#6b728e', failed:'#f97316' }[m.status] || 'var(--fb-accent)';
   const opacity = m.status === 'rejected' ? '0.6' : '1';
-
-  const commentDisplay = m.comment
-    ? `<div style="font-size:.7rem;color:var(--fb-muted);font-style:italic">
-         <i class="bi bi-chat-left-text me-1"></i>${escHtml(m.comment)}
-       </div>` : '';
 
   const statusBtns = m.status === 'pending'
     ? `<button class="btn btn-sm btn-outline-success" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'success')" title="Erfolgreich"><i class="bi bi-check2"></i></button>
@@ -769,22 +749,52 @@ function renderMeasure(m) {
         <i class="bi bi-arrow-right-short" style="color:var(--fb-muted)"></i>
         <span style="font-size:.78rem;font-weight:600;flex:1;min-width:0">${escHtml(m.title)}</span>
         ${statusBadgeHtml(m.status, true)}
+        ${statusLbl ? `<span style="font-size:.65rem;color:var(--fb-muted)">${statusLbl}</span>` : ''}
       </div>
       <div style="font-size:.75rem;color:#b0b8d8;margin-bottom:.3rem">${escHtml(m.description)}</div>
-      ${commentDisplay}
+      ${renderComments(m.comments, 'measure', m.id)}
       <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
         ${statusBtns}
-        ${statusLbl ? `<span style="font-size:.65rem;color:var(--fb-muted)">${statusLbl}</span>` : ''}
-        <div class="d-flex gap-1 ms-auto">
-          <input type="text" class="form-control form-control-sm" id="meas-comment-${m.id}"
-                 placeholder="Kommentar…" value="${escHtml(m.comment || '')}"
-                 style="font-size:.68rem;background:var(--fb-surface2);border-color:var(--fb-border);
-                        color:var(--fb-text);width:140px" />
-          <button class="btn btn-sm btn-outline-secondary" style="font-size:.68rem;padding:.1rem .35rem"
-                  onclick="saveComment('measure',${m.id})" title="Kommentar speichern">
-            <i class="bi bi-floppy"></i>
-          </button>
-        </div>
+      </div>
+    </div>`;
+}
+
+function renderComments(comments, parentType, parentId) {
+  const endpoint = parentType === 'problem'
+    ? `/api/ai/problems/${parentId}/comments`
+    : `/api/ai/measures/${parentId}/comments`;
+  const inputId = `comment-input-${parentType}-${parentId}`;
+
+  const existing = (comments || []).map(c => {
+    const ts = new Date(c.created_at).toLocaleString('de-DE',
+      {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'});
+    return `
+      <div class="d-flex gap-2 align-items-start mb-1" style="font-size:.73rem">
+        <span style="color:var(--fb-muted);white-space:nowrap;padding-top:1px">${ts}</span>
+        <span style="color:var(--fb-text);flex:1">${escHtml(c.text)}</span>
+        <button class="btn btn-link p-0" style="font-size:.65rem;color:var(--fb-muted)"
+                onclick="deleteComment(${c.id})" title="Kommentar löschen">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>`;
+  }).join('');
+
+  const threadSection = existing
+    ? `<div class="mt-1 mb-1 ps-2" style="border-left:2px solid var(--fb-border)">${existing}</div>`
+    : '';
+
+  return `
+    <div class="comment-thread mt-1">
+      ${threadSection}
+      <div class="d-flex gap-1 mt-1">
+        <input type="text" id="${inputId}" placeholder="Kommentar hinzufügen…"
+               class="form-control form-control-sm"
+               style="font-size:.72rem;background:var(--fb-surface);border-color:var(--fb-border);color:var(--fb-text)"
+               onkeydown="if(event.key==='Enter'){postComment('${endpoint}','${inputId}');event.preventDefault()}" />
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;white-space:nowrap"
+                onclick="postComment('${endpoint}','${inputId}')">
+          <i class="bi bi-send"></i>
+        </button>
       </div>
     </div>`;
 }
@@ -846,15 +856,21 @@ async function updateMeasure(id, status) {
   await loadProblems();
 }
 
-async function saveComment(type, id) {
-  const inputId = type === 'problem' ? `prob-comment-${id}` : `meas-comment-${id}`;
+async function postComment(endpoint, inputId) {
   const input = document.getElementById(inputId);
   if (!input) return;
-  const url = type === 'problem' ? `/api/ai/problems/${id}` : `/api/ai/measures/${id}`;
-  await fetch(url, {
-    method: 'PATCH', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ comment: input.value.trim() })
+  const text = input.value.trim();
+  if (!text) return;
+  await fetch(endpoint, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ text })
   });
+  input.value = '';
+  await loadProblems();
+}
+
+async function deleteComment(commentId) {
+  await fetch(`/api/ai/comments/${commentId}`, { method: 'DELETE' });
   await loadProblems();
 }
 
