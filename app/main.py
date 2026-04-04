@@ -74,6 +74,14 @@ def recommendations_redirect():
     return RedirectResponse(url="/")
 
 
+@app.get("/problems/{problem_id}", response_class=HTMLResponse)
+def problem_detail(problem_id: int, request: Request):
+    return templates.TemplateResponse("problem_detail.html", {
+        "request": request,
+        "problem_id": problem_id,
+    })
+
+
 # ---------------------------------------------------------------------------
 # Logs API
 # ---------------------------------------------------------------------------
@@ -261,6 +269,7 @@ def api_export_full(db: Session = Depends(get_db)):
     SEV_LABEL = {"critical": "KRITISCH", "warning": "WARNUNG", "info": "INFO"}
     STATUS_LABEL = {
         "pending": "offen",
+        "check":   "in Prüfung (Wirksamkeit prüfen)",
         "rejected": "abgelehnt",
         "success": "erfolgreich umgesetzt",
         "failed": "umgesetzt, nicht erfolgreich",
@@ -375,6 +384,31 @@ def api_ai_import(data: dict, db: Session = Depends(get_db)):
     return {"status": "ok", "count": count}
 
 
+@app.post("/api/ai/problems")
+def api_create_problem(data: dict, db: Session = Depends(get_db)):
+    """Manually create a problem."""
+    import time as _time
+    title = (data.get("title") or "").strip()
+    description = (data.get("description") or "").strip()
+    if not title or not description:
+        return {"status": "error", "message": "Titel und Beschreibung sind Pflichtfelder"}
+    severity = data.get("severity", "info")
+    if severity not in ("info", "warning", "critical"):
+        severity = "info"
+    category = data.get("category") or None
+    p = AiProblem(
+        run_id=int(_time.time()),
+        title=title,
+        description=description,
+        severity=severity,
+        category=category,
+        status="pending",
+    )
+    db.add(p)
+    db.commit()
+    return {"status": "ok", "id": p.id}
+
+
 @app.post("/api/ai/analyze")
 def api_ai_analyze(db: Session = Depends(get_db)):
     from .ai_analyzer import run_analysis
@@ -437,13 +471,57 @@ def api_get_problems(db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/ai/problems/{problem_id}")
+def api_get_problem(problem_id: int, db: Session = Depends(get_db)):
+    p = db.query(AiProblem).filter(AiProblem.id == problem_id).first()
+    if not p:
+        return {"status": "error", "message": "Nicht gefunden"}
+    measures = db.query(AiMeasure).filter(AiMeasure.problem_id == problem_id).all()
+    all_comments = db.query(AiComment).order_by(AiComment.created_at.asc()).all()
+    comments_by_parent: dict[tuple, list] = {}
+    for c in all_comments:
+        comments_by_parent.setdefault((c.parent_type, c.parent_id), []).append(c)
+
+    def serialise_comments(parent_type, parent_id):
+        return [
+            {"id": c.id, "text": c.text, "created_at": c.created_at.isoformat()}
+            for c in comments_by_parent.get((parent_type, parent_id), [])
+        ]
+
+    return {
+        "id":          p.id,
+        "run_id":      p.run_id,
+        "created_at":  p.created_at.isoformat(),
+        "title":       p.title,
+        "description": p.description,
+        "severity":    p.severity,
+        "category":    p.category,
+        "status":      p.status,
+        "comments":    serialise_comments("problem", p.id),
+        "measures": [
+            {
+                "id":          m.id,
+                "title":       m.title,
+                "description": m.description,
+                "status":      m.status,
+                "created_at":  m.created_at.isoformat(),
+                "comments":    serialise_comments("measure", m.id),
+            }
+            for m in measures
+        ],
+    }
+
+
+_VALID_STATUSES = {"pending", "rejected", "success", "failed", "check"}
+
+
 @app.patch("/api/ai/problems/{problem_id}")
 def api_update_problem(problem_id: int, data: dict, db: Session = Depends(get_db)):
     p = db.query(AiProblem).filter(AiProblem.id == problem_id).first()
     if not p:
         return {"status": "error", "message": "Nicht gefunden"}
     if "status" in data:
-        if data["status"] not in ("pending", "rejected", "success", "failed"):
+        if data["status"] not in _VALID_STATUSES:
             return {"status": "error", "message": "Ungültiger Status"}
         p.status = data["status"]
     db.commit()
@@ -456,7 +534,7 @@ def api_update_measure(measure_id: int, data: dict, db: Session = Depends(get_db
     if not m:
         return {"status": "error", "message": "Nicht gefunden"}
     if "status" in data:
-        if data["status"] not in ("pending", "rejected", "success", "failed"):
+        if data["status"] not in _VALID_STATUSES:
             return {"status": "error", "message": "Ungültiger Status"}
         m.status = data["status"]
     db.commit()

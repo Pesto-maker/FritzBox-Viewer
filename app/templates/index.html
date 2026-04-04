@@ -142,21 +142,20 @@
     #problemsContainer::-webkit-scrollbar-track { background: var(--fb-bg); }
     #problemsContainer::-webkit-scrollbar-thumb { background: var(--fb-border); border-radius: 3px; }
 
-    /* ── Problem + Measure cards ─────────────────────────────── */
-    .problem-card {
-      background: var(--fb-surface2); border: 1px solid var(--fb-border);
-      border-radius: .5rem; transition: opacity .2s;
+    /* ── Problems table ──────────────────────────────────────── */
+    table#problemsTable {
+      background: var(--fb-surface); border-color: var(--fb-border); width: 100%;
     }
-    .measure-item {
-      background: var(--fb-surface); border: 1px solid var(--fb-border);
-      border-radius: .4rem; transition: opacity .2s;
+    table#problemsTable thead th {
+      background: var(--fb-surface2); color: var(--fb-accent2); border-color: var(--fb-border);
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+      padding: .4rem .5rem;
     }
-    .run-header {
-      font-size: .72rem; color: var(--fb-muted);
-      display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
-      padding: .3rem .5rem; background: var(--fb-bg);
-      border-radius: .4rem; margin-bottom: .5rem;
+    table#problemsTable tbody tr {
+      border-color: var(--fb-border); transition: background .1s; cursor: pointer;
     }
+    table#problemsTable tbody tr:hover { background: var(--fb-surface2) !important; }
+    table#problemsTable tbody td { font-size: .82rem; vertical-align: middle; padding: .45rem .5rem; }
 
     /* ── System prompt modal textarea ────────────────────────── */
     #systemPromptText {
@@ -277,16 +276,19 @@
         <div class="panel-toolbar">
           <span class="panel-title"><i class="bi bi-robot me-1"></i>Probleme &amp; Maßnahmen</span>
           <button class="btn btn-sm btn-outline-info" id="btnAnalyze" onclick="startAnalysis()">
-            <i class="bi bi-robot me-1"></i>KI-Analyse starten
+            <i class="bi bi-robot me-1"></i>KI-Analyse
+          </button>
+          <button class="btn btn-sm btn-outline-success" onclick="openCreateProblemModal()">
+            <i class="bi bi-plus-lg me-1"></i>Neu
           </button>
           <button class="btn btn-sm btn-outline-light" onclick="downloadFullExport()">
             <i class="bi bi-download me-1"></i>Vollexport
           </button>
-          <button class="btn btn-sm btn-outline-success" onclick="openImportModal()">
-            <i class="bi bi-upload me-1"></i>Importieren
+          <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal()">
+            <i class="bi bi-upload me-1"></i>Import
           </button>
           <button class="btn btn-sm btn-outline-info" onclick="openSystemPromptModal('full')">
-            <i class="bi bi-clipboard me-1"></i>Systemprompt
+            <i class="bi bi-clipboard me-1"></i>Prompt
           </button>
         </div>
 
@@ -306,6 +308,66 @@
 
   </div><!-- /row -->
 </main>
+
+<!-- ════════════════════════════════════════════════════ CREATE PROBLEM MODAL -->
+<div class="modal fade" id="createProblemModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background:var(--fb-surface);border-color:var(--fb-border)">
+      <div class="modal-header" style="border-color:var(--fb-border)">
+        <h5 class="modal-title" style="color:var(--fb-accent2)">
+          <i class="bi bi-plus-circle me-2"></i>Problem manuell anlegen
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small" style="color:var(--fb-muted)">Titel <span class="text-danger">*</span></label>
+          <input type="text" id="cpTitle" class="form-control" maxlength="80"
+                 placeholder="Kurzer prägnanter Titel (max. 80 Zeichen)"
+                 style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text)" />
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small" style="color:var(--fb-muted)">Schweregrad</label>
+            <select id="cpSeverity" class="form-select"
+                    style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text)">
+              <option value="info">Info</option>
+              <option value="warning">Warnung</option>
+              <option value="critical">Kritisch</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label small" style="color:var(--fb-muted)">Kategorie</label>
+            <select id="cpCategory" class="form-select"
+                    style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text)">
+              <option value="">— keine —</option>
+              <option value="internet">Internet</option>
+              <option value="wifi">WLAN</option>
+              <option value="phone">Telefon</option>
+              <option value="security">Sicherheit</option>
+              <option value="system">System</option>
+              <option value="mobile">Mobile</option>
+              <option value="info">Info</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small" style="color:var(--fb-muted)">Beschreibung <span class="text-danger">*</span></label>
+          <textarea id="cpDescription" class="form-control" rows="5"
+                    placeholder="Detaillierte Beschreibung des Problems… (Markdown möglich)"
+                    style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text);resize:vertical"></textarea>
+        </div>
+        <div id="cpError" class="alert alert-danger py-2 small d-none"></div>
+      </div>
+      <div class="modal-footer" style="border-color:var(--fb-border)">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+        <button type="button" class="btn btn-success" id="btnCreateProblem" onclick="createProblem()">
+          <i class="bi bi-plus-lg me-1"></i>Problem anlegen
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════════════ IMPORT MODAL -->
 <div class="modal fade" id="importModal" tabindex="-1">
@@ -626,189 +688,100 @@ async function loadProblems() {
   try {
     const res  = await fetch('/api/ai/problems');
     const data = await res.json();
-    renderProblems(data);
+    renderProblemsTable(data);
   } catch(e) {
     document.getElementById('problemsContainer').innerHTML =
       `<div class="text-danger small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Fehler: ${escHtml(e.message)}</div>`;
   }
 }
 
-function renderProblems(problems) {
+const STATUS_CFG = {
+  pending:  { bg: 'rgba(79,110,247,.2)',  color: '#818cf8',  label: 'Offen' },
+  check:    { bg: 'rgba(245,158,11,.2)',  color: '#fbbf24',  label: 'In Prüfung' },
+  success:  { bg: 'rgba(34,197,94,.2)',   color: '#4ade80',  label: 'Erfolgreich' },
+  failed:   { bg: 'rgba(249,115,22,.2)',  color: '#fb923c',  label: 'Nicht erfolgreich' },
+  rejected: { bg: 'rgba(107,114,142,.2)', color: '#94a3b8',  label: 'Abgelehnt' },
+};
+
+function statusBadgeHtml(status) {
+  const c = STATUS_CFG[status] || STATUS_CFG.pending;
+  return `<span class="badge" style="background:${c.bg};color:${c.color};font-size:.65rem;white-space:nowrap">${c.label}</span>`;
+}
+
+const SEV_BADGE = {
+  critical: '<span class="badge" style="background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35);font-size:.65rem">KRIT</span>',
+  warning:  '<span class="badge" style="background:rgba(234,179,8,.2);color:#facc15;border:1px solid rgba(234,179,8,.35);font-size:.65rem">WARN</span>',
+  info:     '<span class="badge" style="background:rgba(107,114,142,.2);color:#94a3b8;border:1px solid rgba(107,114,142,.35);font-size:.65rem">INFO</span>',
+};
+
+const LEFT_BORDER = {
+  pending:'var(--fb-accent)', check:'#fbbf24', success:'#22c55e',
+  rejected:'#6b728e', failed:'#f97316'
+};
+
+function renderProblemsTable(problems) {
   const container = document.getElementById('problemsContainer');
   if (!problems.length) {
     container.innerHTML = `
       <div class="text-center py-4" style="color:var(--fb-muted)">
         <i class="bi bi-robot" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
         Noch keine Probleme erfasst.<br>
-        <small>Klicke auf <strong>KI-Analyse starten</strong> oder lade einen Export hoch.</small>
+        <small>Klicke auf <strong>KI-Analyse</strong> oder lege ein Problem manuell an.</small>
       </div>`;
     return;
   }
 
-  // Group by run_id (already sorted desc by server)
-  const runs = {};
-  const runIds = [];
-  for (const p of problems) {
-    if (!runs[p.run_id]) { runIds.push(p.run_id); runs[p.run_id] = []; }
-    runs[p.run_id].push(p);
+  // Sort by created_at desc (server returns run_id desc but let's be explicit)
+  const sorted = [...problems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  let rows = '';
+  for (const p of sorted) {
+    const openM = p.measures.filter(m => m.status === 'pending' || m.status === 'check').length;
+    const totalM = p.measures.length;
+    const measCell = totalM === 0
+      ? `<span style="color:var(--fb-muted);font-size:.75rem">—</span>`
+      : openM > 0
+        ? `<span style="color:#facc15;font-size:.75rem">${openM}/${totalM} offen</span>`
+        : `<span style="color:#4ade80;font-size:.75rem">✓ ${totalM}/${totalM}</span>`;
+
+    const sev = SEV_BADGE[p.severity] || SEV_BADGE.info;
+    const catBadge = p.category
+      ? `<span class="badge-cat cat-${p.category}" style="font-size:.62rem">${p.category}</span>`
+      : '';
+    const date = new Date(p.created_at).toLocaleString('de-DE',
+      {day:'2-digit', month:'2-digit', year:'2-digit'});
+    const border = LEFT_BORDER[p.status] || 'var(--fb-accent)';
+
+    rows += `
+      <tr onclick="location.href='/problems/${p.id}'" style="border-left:3px solid ${border}">
+        <td>${sev}</td>
+        <td>
+          <a href="/problems/${p.id}" class="text-decoration-none"
+             style="color:var(--fb-text);font-size:.82rem;font-weight:500"
+             onclick="event.stopPropagation()">${escHtml(p.title)}</a>
+          ${catBadge ? `<br><span class="mt-1 d-inline-block">${catBadge}</span>` : ''}
+        </td>
+        <td>${statusBadgeHtml(p.status)}</td>
+        <td>${measCell}</td>
+        <td style="color:var(--fb-muted);font-size:.72rem;white-space:nowrap">${date}</td>
+      </tr>`;
   }
 
-  let html = '';
-  for (const runId of runIds) {
-    const runProbs = runs[runId];
-    const runDate = new Date(runId * 1000).toLocaleString('de-DE', {
-      day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'
-    });
-    const cnt = {
-      pending:  runProbs.filter(p => p.status === 'pending').length,
-      success:  runProbs.filter(p => p.status === 'success').length,
-      failed:   runProbs.filter(p => p.status === 'failed').length,
-      rejected: runProbs.filter(p => p.status === 'rejected').length,
-    };
-    html += `<div class="mb-3">
-      <div class="run-header">
-        <i class="bi bi-calendar3"></i>
-        <span>Analyse vom ${runDate}</span>
-        <span class="ms-auto d-flex gap-1 flex-wrap">
-          ${cnt.pending  ? `<span class="badge" style="background:rgba(79,110,247,.2);color:#818cf8">${cnt.pending} offen</span>` : ''}
-          ${cnt.success  ? `<span class="badge" style="background:rgba(34,197,94,.2);color:#4ade80">${cnt.success} erfolgreich</span>` : ''}
-          ${cnt.failed   ? `<span class="badge" style="background:rgba(249,115,22,.2);color:#fb923c">${cnt.failed} nicht erfolgreich</span>` : ''}
-          ${cnt.rejected ? `<span class="badge" style="background:rgba(107,114,142,.2);color:#94a3b8">${cnt.rejected} abgelehnt</span>` : ''}
-        </span>
-      </div>`;
-    for (const p of runProbs) html += renderProblemCard(p);
-    html += `</div>`;
-  }
-  container.innerHTML = html;
-}
-
-function renderProblemCard(p) {
-  const borderColor = { pending:'var(--fb-accent)', success:'#22c55e', rejected:'#6b728e', failed:'#f97316' }[p.status] || 'var(--fb-accent)';
-  const opacity = p.status === 'rejected' ? '0.6' : '1';
-
-  const sevBadge = {
-    critical: '<span class="badge me-1" style="background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35)">KRITISCH</span>',
-    warning:  '<span class="badge me-1" style="background:rgba(234,179,8,.2);color:#facc15;border:1px solid rgba(234,179,8,.35)">WARNUNG</span>',
-    info:     '<span class="badge me-1" style="background:rgba(107,114,142,.2);color:#94a3b8;border:1px solid rgba(107,114,142,.35)">INFO</span>',
-  }[p.severity] || '';
-
-  const catIcon = {
-    internet:'bi-globe', wifi:'bi-wifi', phone:'bi-telephone',
-    security:'bi-shield-exclamation', system:'bi-gear', mobile:'bi-phone', info:'bi-info-circle'
-  }[p.category] || 'bi-question-circle';
-
-  const date = new Date(p.created_at).toLocaleString('de-DE',
-    {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
-
-  const statusBtns = p.status === 'pending'
-    ? `<button class="btn btn-sm btn-outline-success" style="font-size:.72rem" onclick="updateProblem(${p.id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
-       <button class="btn btn-sm btn-outline-warning" style="font-size:.72rem" onclick="updateProblem(${p.id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
-       <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem" onclick="updateProblem(${p.id},'rejected')"><i class="bi bi-dash-circle me-1"></i>Ablehnen</button>`
-    : `<button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem" onclick="updateProblem(${p.id},'pending')"><i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen</button>`;
-
-  const measuresHtml = p.measures.length
-    ? `<div class="mt-2 ps-2" style="border-left:2px solid var(--fb-border)">
-         ${p.measures.map(m => renderMeasure(m)).join('')}
-       </div>` : '';
-
-  return `
-    <div class="problem-card mb-2 p-2" id="prob-${p.id}"
-         style="border-left:3px solid ${borderColor};opacity:${opacity}">
-      <div class="d-flex align-items-start gap-1 flex-wrap mb-1">
-        ${sevBadge}
-        <i class="bi ${catIcon}" style="color:var(--fb-muted);font-size:.85rem;margin-top:3px"></i>
-        <span style="font-size:.85rem;font-weight:600;flex:1;min-width:0">${escHtml(p.title)}</span>
-        ${statusBadgeHtml(p.status)}
-        <span style="font-size:.68rem;color:var(--fb-muted);white-space:nowrap">${date}</span>
-      </div>
-      <div style="font-size:.8rem;color:#b0b8d8;margin-bottom:.4rem">${escHtml(p.description)}</div>
-      ${renderComments(p.comments, 'problem', p.id)}
-      ${measuresHtml}
-      <div class="d-flex flex-wrap gap-1 align-items-center mt-2 pt-2" style="border-top:1px solid var(--fb-border)">
-        ${statusBtns}
-      </div>
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table id="problemsTable" class="table table-dark table-hover table-sm mb-0">
+        <thead>
+          <tr>
+            <th style="width:2.5rem">Sev.</th>
+            <th>Titel</th>
+            <th style="width:7rem">Status</th>
+            <th style="width:5.5rem">Maßnahmen</th>
+            <th style="width:4rem">Datum</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>`;
-}
-
-function renderMeasure(m) {
-  const borderColor = { pending:'var(--fb-accent)', success:'#22c55e', rejected:'#6b728e', failed:'#f97316' }[m.status] || 'var(--fb-accent)';
-  const opacity = m.status === 'rejected' ? '0.6' : '1';
-
-  const statusBtns = m.status === 'pending'
-    ? `<button class="btn btn-sm btn-outline-success" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'success')" title="Erfolgreich"><i class="bi bi-check2"></i></button>
-       <button class="btn btn-sm btn-outline-warning" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'failed')" title="Nicht erfolgreich"><i class="bi bi-x-circle"></i></button>
-       <button class="btn btn-sm btn-outline-secondary" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'rejected')" title="Ablehnen"><i class="bi bi-dash-circle"></i></button>`
-    : `<button class="btn btn-sm btn-outline-secondary" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'pending')" title="Zurücksetzen"><i class="bi bi-arrow-counterclockwise"></i></button>`;
-
-  const statusLbl = { success:'✓ Erfolgreich', failed:'✗ Nicht erfolgreich', rejected:'— Abgelehnt' }[m.status] || '';
-
-  return `
-    <div class="measure-item mb-1 p-2" id="meas-${m.id}"
-         style="border-left:2px solid ${borderColor};opacity:${opacity}">
-      <div class="d-flex align-items-start gap-1 flex-wrap mb-1">
-        <i class="bi bi-arrow-right-short" style="color:var(--fb-muted)"></i>
-        <span style="font-size:.78rem;font-weight:600;flex:1;min-width:0">${escHtml(m.title)}</span>
-        ${statusBadgeHtml(m.status, true)}
-        ${statusLbl ? `<span style="font-size:.65rem;color:var(--fb-muted)">${statusLbl}</span>` : ''}
-      </div>
-      <div style="font-size:.75rem;color:#b0b8d8;margin-bottom:.3rem">${escHtml(m.description)}</div>
-      ${renderComments(m.comments, 'measure', m.id)}
-      <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
-        ${statusBtns}
-      </div>
-    </div>`;
-}
-
-function renderComments(comments, parentType, parentId) {
-  const endpoint = parentType === 'problem'
-    ? `/api/ai/problems/${parentId}/comments`
-    : `/api/ai/measures/${parentId}/comments`;
-  const inputId = `comment-input-${parentType}-${parentId}`;
-
-  const existing = (comments || []).map(c => {
-    const ts = new Date(c.created_at).toLocaleString('de-DE',
-      {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'});
-    return `
-      <div class="d-flex gap-2 align-items-start mb-1" style="font-size:.73rem">
-        <span style="color:var(--fb-muted);white-space:nowrap;padding-top:1px">${ts}</span>
-        <span style="color:var(--fb-text);flex:1">${escHtml(c.text)}</span>
-        <button class="btn btn-link p-0" style="font-size:.65rem;color:var(--fb-muted)"
-                onclick="deleteComment(${c.id})" title="Kommentar löschen">
-          <i class="bi bi-trash3"></i>
-        </button>
-      </div>`;
-  }).join('');
-
-  const threadSection = existing
-    ? `<div class="mt-1 mb-1 ps-2" style="border-left:2px solid var(--fb-border)">${existing}</div>`
-    : '';
-
-  return `
-    <div class="comment-thread mt-1">
-      ${threadSection}
-      <div class="d-flex gap-1 mt-1">
-        <input type="text" id="${inputId}" placeholder="Kommentar hinzufügen…"
-               class="form-control form-control-sm"
-               style="font-size:.72rem;background:var(--fb-surface);border-color:var(--fb-border);color:var(--fb-text)"
-               onkeydown="if(event.key==='Enter'){postComment('${endpoint}','${inputId}');event.preventDefault()}" />
-        <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem;white-space:nowrap"
-                onclick="postComment('${endpoint}','${inputId}')">
-          <i class="bi bi-send"></i>
-        </button>
-      </div>
-    </div>`;
-}
-
-function statusBadgeHtml(status, small = false) {
-  const map = {
-    pending:  ['rgba(79,110,247,.2)', '#818cf8',  'Offen'],
-    success:  ['rgba(34,197,94,.2)',  '#4ade80',  'Erfolgreich'],
-    rejected: ['rgba(107,114,142,.2)','#94a3b8',  'Abgelehnt'],
-    failed:   ['rgba(249,115,22,.2)', '#fb923c',  'Nicht erfolgreich'],
-  };
-  const [bg, color, label] = map[status] || map['pending'];
-  const fs = small ? '.62rem' : '.65rem';
-  return `<span class="badge" style="background:${bg};color:${color};font-size:${fs};white-space:nowrap">${label}</span>`;
 }
 
 async function startAnalysis() {
@@ -828,7 +801,7 @@ async function startAnalysis() {
     showAnalysisResult('danger', 'Verbindungsfehler: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-robot me-1"></i>KI-Analyse starten';
+    btn.innerHTML = '<i class="bi bi-robot me-1"></i>KI-Analyse';
   }
 }
 
@@ -840,38 +813,53 @@ function showAnalysisResult(type, msg) {
   setTimeout(() => el.classList.add('d-none'), 6000);
 }
 
-async function updateProblem(id, status) {
-  await fetch(`/api/ai/problems/${id}`, {
-    method: 'PATCH', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ status })
-  });
-  await loadProblems();
+function openCreateProblemModal() {
+  document.getElementById('cpTitle').value = '';
+  document.getElementById('cpDescription').value = '';
+  document.getElementById('cpSeverity').value = 'info';
+  document.getElementById('cpCategory').value = '';
+  document.getElementById('cpError').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('createProblemModal')).show();
 }
 
-async function updateMeasure(id, status) {
-  await fetch(`/api/ai/measures/${id}`, {
-    method: 'PATCH', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ status })
-  });
-  await loadProblems();
-}
+async function createProblem() {
+  const btn = document.getElementById('btnCreateProblem');
+  const errEl = document.getElementById('cpError');
+  const title = document.getElementById('cpTitle').value.trim();
+  const description = document.getElementById('cpDescription').value.trim();
+  const severity = document.getElementById('cpSeverity').value;
+  const category = document.getElementById('cpCategory').value || null;
 
-async function postComment(endpoint, inputId) {
-  const input = document.getElementById(inputId);
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text) return;
-  await fetch(endpoint, {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ text })
-  });
-  input.value = '';
-  await loadProblems();
-}
+  errEl.classList.add('d-none');
+  if (!title || !description) {
+    errEl.textContent = 'Titel und Beschreibung sind Pflichtfelder.';
+    errEl.classList.remove('d-none');
+    return;
+  }
 
-async function deleteComment(commentId) {
-  await fetch(`/api/ai/comments/${commentId}`, { method: 'DELETE' });
-  await loadProblems();
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-sm me-1" role="status"></span>Speichere…';
+  try {
+    const res  = await fetch('/api/ai/problems', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ title, description, severity, category })
+    });
+    const json = await res.json();
+    if (json.status === 'ok') {
+      bootstrap.Modal.getInstance(document.getElementById('createProblemModal')).hide();
+      await loadProblems();
+      showAnalysisResult('success', 'Problem angelegt.');
+    } else {
+      errEl.textContent = json.message || 'Unbekannter Fehler';
+      errEl.classList.remove('d-none');
+    }
+  } catch(e) {
+    errEl.textContent = 'Verbindungsfehler: ' + e.message;
+    errEl.classList.remove('d-none');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-plus-lg me-1"></i>Problem anlegen';
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

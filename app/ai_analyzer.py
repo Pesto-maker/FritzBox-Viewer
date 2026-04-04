@@ -129,7 +129,7 @@ def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict,
     prev_section = ""
     if prev_problems:
         success  = [p for p in prev_problems if p.status == "success"]
-        failed   = [p for p in prev_problems if p.status == "failed"]
+        failed   = [p for p in prev_problems if p.status in ("failed", "check")]
         rejected = [p for p in prev_problems if p.status == "rejected"]
         pending  = [p for p in prev_problems if p.status == "pending"]
 

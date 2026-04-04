@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="de" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Problem — FritzBox Viewer</title>
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <style>
+    :root {
+      --fb-bg:        #0d0f1a;
+      --fb-surface:   #151929;
+      --fb-surface2:  #1c2035;
+      --fb-border:    #2a2f4a;
+      --fb-accent:    #4f6ef7;
+      --fb-accent2:   #6ee7f7;
+      --fb-text:      #d0d6f0;
+      --fb-muted:     #6b728e;
+    }
+
+    body {
+      background-color: var(--fb-bg);
+      color: var(--fb-text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    .fb-header {
+      background: linear-gradient(135deg, #111527 0%, #1a2040 100%);
+      border-bottom: 1px solid var(--fb-border);
+      padding: 0.75rem 1.5rem;
+    }
+    .fb-logo {
+      font-size: 1.3rem; font-weight: 700;
+      background: linear-gradient(90deg, var(--fb-accent), var(--fb-accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .card-main {
+      background: var(--fb-surface); border: 1px solid var(--fb-border); border-radius: 0.75rem;
+    }
+
+    /* Category badges */
+    .badge-cat {
+      font-size: .7rem; font-weight: 600; padding: .25em .55em;
+      border-radius: .4rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .cat-internet { background: rgba(79,110,247,.2);  color: #818cf8; border: 1px solid rgba(79,110,247,.35); }
+    .cat-wifi     { background: rgba(34,211,238,.2);  color: #22d3ee; border: 1px solid rgba(34,211,238,.35); }
+    .cat-phone    { background: rgba(34,197,94,.2);   color: #4ade80; border: 1px solid rgba(34,197,94,.35); }
+    .cat-mobile   { background: rgba(168,85,247,.2);  color: #c084fc; border: 1px solid rgba(168,85,247,.35); }
+    .cat-system   { background: rgba(251,146,60,.2);  color: #fb923c; border: 1px solid rgba(251,146,60,.35); }
+    .cat-security { background: rgba(239,68,68,.3);   color: #fca5a5; border: 1px solid rgba(239,68,68,.5); }
+    .cat-info     { background: rgba(107,114,142,.2); color: #94a3b8; border: 1px solid rgba(107,114,142,.35); }
+
+    /* Measure item */
+    .measure-item {
+      background: var(--fb-surface2); border: 1px solid var(--fb-border);
+      border-radius: .5rem; transition: opacity .2s;
+    }
+
+    /* Comment thread */
+    .comment-thread-box {
+      background: var(--fb-bg); border-radius: .4rem;
+      padding: .5rem .75rem;
+    }
+    .comment-entry {
+      padding: .4rem 0; border-bottom: 1px solid var(--fb-border);
+    }
+    .comment-entry:last-child { border-bottom: none; }
+
+    /* Markdown rendered content */
+    .md-content { line-height: 1.6; }
+    .md-content p { margin-bottom: .5rem; }
+    .md-content p:last-child { margin-bottom: 0; }
+    .md-content ul, .md-content ol { padding-left: 1.4rem; margin-bottom: .5rem; }
+    .md-content li { margin-bottom: .15rem; }
+    .md-content code {
+      background: var(--fb-surface2); color: var(--fb-accent2);
+      padding: .1em .35em; border-radius: .25rem; font-size: .85em;
+    }
+    .md-content pre {
+      background: var(--fb-surface2); border: 1px solid var(--fb-border);
+      border-radius: .4rem; padding: .75rem; overflow-x: auto;
+    }
+    .md-content pre code { background: none; padding: 0; }
+    .md-content strong { color: var(--fb-text); }
+    .md-content h1, .md-content h2, .md-content h3 { color: var(--fb-accent2); margin-top: .75rem; }
+    .md-content blockquote {
+      border-left: 3px solid var(--fb-border); margin: 0; padding-left: .75rem;
+      color: var(--fb-muted);
+    }
+
+    /* Comment input */
+    .comment-input {
+      background: var(--fb-surface); border: 1px solid var(--fb-border);
+      color: var(--fb-text); border-radius: .4rem; font-size: .82rem;
+      padding: .4rem .6rem;
+    }
+    .comment-input:focus {
+      border-color: var(--fb-accent); outline: none; box-shadow: 0 0 0 2px rgba(79,110,247,.2);
+    }
+    .comment-input::placeholder { color: var(--fb-muted); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="fb-header d-flex align-items-center justify-content-between gap-3">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Zurück
+    </a>
+    <div class="fb-logo"><i class="bi bi-router me-2"></i>FritzBox Viewer</div>
+  </div>
+  <div id="headerBadges" class="d-flex align-items-center gap-2"></div>
+</header>
+
+<!-- MAIN -->
+<main class="container-fluid p-3 p-md-4" style="max-width: 960px">
+
+  <div id="loadingState" class="text-center py-5" style="color:var(--fb-muted)">
+    <div class="spinner-border mb-3" role="status"></div>
+    <div>Lade Problem…</div>
+  </div>
+
+  <div id="errorState" class="d-none">
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <span id="errorMsg">Unbekannter Fehler</span>
+    </div>
+    <a href="/" class="btn btn-secondary">← Zurück zur Übersicht</a>
+  </div>
+
+  <div id="content" class="d-none">
+
+    <!-- Problem card -->
+    <div id="problemCard" class="card-main p-4 mb-4"></div>
+
+    <!-- Measures -->
+    <div id="measuresSection"></div>
+
+  </div>
+</main>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+
+<script>
+const PROBLEM_ID = {{ problem_id }};
+
+// ── Markdown renderer ──────────────────────────────────────────────────────
+function md(text) {
+  if (!text) return '';
+  return DOMPurify.sanitize(marked.parse(text));
+}
+
+// ── Status config ──────────────────────────────────────────────────────────
+const STATUS_CFG = {
+  pending:  { bg: 'rgba(79,110,247,.2)',  color: '#818cf8',  label: 'Offen' },
+  check:    { bg: 'rgba(245,158,11,.2)',  color: '#fbbf24',  label: 'In Prüfung' },
+  success:  { bg: 'rgba(34,197,94,.2)',   color: '#4ade80',  label: 'Erfolgreich' },
+  failed:   { bg: 'rgba(249,115,22,.2)',  color: '#fb923c',  label: 'Nicht erfolgreich' },
+  rejected: { bg: 'rgba(107,114,142,.2)','color': '#94a3b8', label: 'Abgelehnt' },
+};
+
+function statusBadge(status) {
+  const c = STATUS_CFG[status] || STATUS_CFG.pending;
+  return `<span class="badge" style="background:${c.bg};color:${c.color}">${c.label}</span>`;
+}
+
+function borderColor(status) {
+  return { pending:'var(--fb-accent)', check:'#fbbf24', success:'#22c55e',
+           rejected:'#6b728e', failed:'#f97316' }[status] || 'var(--fb-accent)';
+}
+
+const SEV_BADGE = {
+  critical: '<span class="badge me-1" style="background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35)">KRITISCH</span>',
+  warning:  '<span class="badge me-1" style="background:rgba(234,179,8,.2);color:#facc15;border:1px solid rgba(234,179,8,.35)">WARNUNG</span>',
+  info:     '<span class="badge me-1" style="background:rgba(107,114,142,.2);color:#94a3b8;border:1px solid rgba(107,114,142,.35)">INFO</span>',
+};
+
+const CAT_ICON = {
+  internet:'bi-globe', wifi:'bi-wifi', phone:'bi-telephone',
+  security:'bi-shield-exclamation', system:'bi-gear', mobile:'bi-phone', info:'bi-info-circle'
+};
+
+// ── Status action buttons ──────────────────────────────────────────────────
+function problemStatusBtns(p) {
+  const id = p.id;
+  if (p.status === 'pending') return `
+    <button class="btn btn-sm btn-outline-info" onclick="updateProblem(${id},'check')"><i class="bi bi-hourglass-split me-1"></i>In Prüfung</button>
+    <button class="btn btn-sm btn-outline-success" onclick="updateProblem(${id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
+    <button class="btn btn-sm btn-outline-warning" onclick="updateProblem(${id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="updateProblem(${id},'rejected')"><i class="bi bi-dash-circle me-1"></i>Ablehnen</button>`;
+  if (p.status === 'check') return `
+    <button class="btn btn-sm btn-outline-success" onclick="updateProblem(${id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
+    <button class="btn btn-sm btn-outline-warning" onclick="updateProblem(${id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
+    <button class="btn btn-sm btn-outline-secondary" onclick="updateProblem(${id},'pending')"><i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen</button>`;
+  return `<button class="btn btn-sm btn-outline-secondary" onclick="updateProblem(${id},'pending')"><i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen</button>`;
+}
+
+function measureStatusBtns(m) {
+  const id = m.id;
+  if (m.status === 'pending') return `
+    <button class="btn btn-sm btn-outline-info" style="font-size:.75rem" onclick="updateMeasure(${id},'check')"><i class="bi bi-hourglass-split me-1"></i>In Prüfung</button>
+    <button class="btn btn-sm btn-outline-success" style="font-size:.75rem" onclick="updateMeasure(${id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
+    <button class="btn btn-sm btn-outline-warning" style="font-size:.75rem" onclick="updateMeasure(${id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
+    <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem" onclick="updateMeasure(${id},'rejected')"><i class="bi bi-dash-circle me-1"></i>Ablehnen</button>`;
+  if (m.status === 'check') return `
+    <button class="btn btn-sm btn-outline-success" style="font-size:.75rem" onclick="updateMeasure(${id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
+    <button class="btn btn-sm btn-outline-warning" style="font-size:.75rem" onclick="updateMeasure(${id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
+    <button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem" onclick="updateMeasure(${id},'pending')"><i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen</button>`;
+  return `<button class="btn btn-sm btn-outline-secondary" style="font-size:.75rem" onclick="updateMeasure(${id},'pending')"><i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen</button>`;
+}
+
+// ── Comment thread ─────────────────────────────────────────────────────────
+function renderComments(comments, parentType, parentId) {
+  const endpoint = parentType === 'problem'
+    ? `/api/ai/problems/${parentId}/comments`
+    : `/api/ai/measures/${parentId}/comments`;
+  const inputId = `ci-${parentType}-${parentId}`;
+
+  const entries = (comments || []).map(c => {
+    const ts = new Date(c.created_at).toLocaleString('de-DE',
+      {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'});
+    return `
+      <div class="comment-entry d-flex gap-2 align-items-start">
+        <span style="color:var(--fb-muted);font-size:.75rem;white-space:nowrap;padding-top:2px">${ts}</span>
+        <div class="md-content flex-1" style="font-size:.85rem">${md(c.text)}</div>
+        <button class="btn btn-link p-0 ms-1" style="font-size:.7rem;color:var(--fb-muted)"
+                onclick="deleteComment(${c.id})" title="Löschen">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="mt-3">
+      <div style="font-size:.75rem;color:var(--fb-muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">
+        <i class="bi bi-chat-left-text me-1"></i>Kommentare
+      </div>
+      ${entries ? `<div class="comment-thread-box mb-2">${entries}</div>` : ''}
+      <div class="d-flex gap-2">
+        <textarea id="${inputId}" rows="2" placeholder="Kommentar hinzufügen… (Markdown möglich)"
+                  class="form-control comment-input flex-1"
+                  onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){postComment('${endpoint}','${inputId}');event.preventDefault()}"></textarea>
+        <div class="d-flex flex-column gap-1">
+          <button class="btn btn-sm btn-outline-secondary h-100" onclick="postComment('${endpoint}','${inputId}')" title="Senden (Ctrl+Enter)">
+            <i class="bi bi-send"></i>
+          </button>
+        </div>
+      </div>
+      <div style="font-size:.68rem;color:var(--fb-muted);margin-top:.2rem">Ctrl+Enter zum Senden · Markdown wird gerendert</div>
+    </div>`;
+}
+
+// ── Render problem ─────────────────────────────────────────────────────────
+function renderProblem(p) {
+  const date = new Date(p.created_at).toLocaleString('de-DE',
+    {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+  const sevBadge = SEV_BADGE[p.severity] || SEV_BADGE.info;
+  const catBadge = p.category
+    ? `<span class="badge-cat cat-${p.category}"><i class="bi ${CAT_ICON[p.category] || 'bi-question-circle'} me-1"></i>${p.category}</span>`
+    : '';
+
+  // Header badges in nav
+  document.getElementById('headerBadges').innerHTML =
+    `${sevBadge}${catBadge}<span style="font-size:.8rem;color:var(--fb-muted)">${statusBadge(p.status)}</span>`;
+  document.title = `${p.title} — FritzBox Viewer`;
+
+  document.getElementById('problemCard').innerHTML = `
+    <div style="border-left:4px solid ${borderColor(p.status)};padding-left:.75rem">
+      <div class="d-flex align-items-start flex-wrap gap-2 mb-2">
+        ${sevBadge}${catBadge}
+        ${statusBadge(p.status)}
+        <span style="font-size:.8rem;color:var(--fb-muted);margin-left:auto">${date}</span>
+      </div>
+      <h2 style="font-size:1.15rem;font-weight:700;color:var(--fb-text);margin-bottom:.75rem">${escHtml(p.title)}</h2>
+      <div class="md-content" style="color:#b0b8d8">${md(p.description)}</div>
+      ${renderComments(p.comments, 'problem', p.id)}
+      <div class="d-flex flex-wrap gap-2 mt-3 pt-3" style="border-top:1px solid var(--fb-border)">
+        ${problemStatusBtns(p)}
+      </div>
+    </div>`;
+
+  // Measures
+  const sec = document.getElementById('measuresSection');
+  if (!p.measures.length) {
+    sec.innerHTML = `<p style="color:var(--fb-muted);font-size:.85rem">Keine Maßnahmen erfasst.</p>`;
+    return;
+  }
+
+  let html = `<h3 style="font-size:.8rem;font-weight:700;color:var(--fb-accent2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem">
+    <i class="bi bi-list-check me-1"></i>Maßnahmen (${p.measures.length})
+  </h3>`;
+  for (const m of p.measures) {
+    const opacity = m.status === 'rejected' ? '0.55' : '1';
+    html += `
+      <div class="measure-item p-3 mb-3" id="meas-${m.id}"
+           style="border-left:3px solid ${borderColor(m.status)};opacity:${opacity}">
+        <div class="d-flex align-items-start flex-wrap gap-2 mb-2">
+          <i class="bi bi-arrow-right-short" style="color:var(--fb-muted);font-size:1.1rem"></i>
+          <span style="font-size:.9rem;font-weight:600;flex:1">${escHtml(m.title)}</span>
+          ${statusBadge(m.status)}
+        </div>
+        <div class="md-content" style="color:#b0b8d8;font-size:.88rem">${md(m.description)}</div>
+        ${renderComments(m.comments, 'measure', m.id)}
+        <div class="d-flex flex-wrap gap-2 mt-3 pt-2" style="border-top:1px solid var(--fb-border)">
+          ${measureStatusBtns(m)}
+        </div>
+      </div>`;
+  }
+  sec.innerHTML = html;
+}
+
+// ── Data loading ───────────────────────────────────────────────────────────
+async function loadProblem() {
+  try {
+    const res  = await fetch(`/api/ai/problems/${PROBLEM_ID}`);
+    const data = await res.json();
+    if (data.status === 'error') {
+      showError(data.message);
+      return;
+    }
+    document.getElementById('loadingState').classList.add('d-none');
+    document.getElementById('content').classList.remove('d-none');
+    renderProblem(data);
+  } catch(e) {
+    showError('Verbindungsfehler: ' + e.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').classList.add('d-none');
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorState').classList.remove('d-none');
+}
+
+// ── Updates ────────────────────────────────────────────────────────────────
+async function updateProblem(id, status) {
+  await fetch(`/api/ai/problems/${id}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ status })
+  });
+  await loadProblem();
+}
+
+async function updateMeasure(id, status) {
+  await fetch(`/api/ai/measures/${id}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ status })
+  });
+  await loadProblem();
+}
+
+async function postComment(endpoint, inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  await fetch(endpoint, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ text })
+  });
+  input.value = '';
+  await loadProblem();
+}
+
+async function deleteComment(commentId) {
+  if (!confirm('Kommentar löschen?')) return;
+  await fetch(`/api/ai/comments/${commentId}`, { method: 'DELETE' });
+  await loadProblem();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+loadProblem();
+</script>
+</body>
+</html>
