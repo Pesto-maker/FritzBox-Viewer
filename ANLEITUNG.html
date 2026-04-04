@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FritzBox Viewer — Anleitung</title>
+  <style>
+    :root {
+      --bg:       #0d0f1a;
+      --surface:  #151929;
+      --surface2: #1c2035;
+      --border:   #2a2f4a;
+      --accent:   #4f6ef7;
+      --accent2:  #6ee7f7;
+      --text:     #d0d6f0;
+      --muted:    #6b728e;
+      --success:  #22c55e;
+      --warning:  #facc15;
+      --danger:   #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── Layout ── */
+    .page-wrap { display: flex; min-height: 100vh; }
+
+    nav {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    nav .logo {
+      font-size: 1.1rem; font-weight: 700; padding: 0 1.25rem 1.25rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      display: flex; align-items: center; gap: .5rem; border-bottom: 1px solid var(--border);
+      margin-bottom: .75rem;
+    }
+
+    nav ul { list-style: none; padding: 0; }
+    nav ul li a {
+      display: block; padding: .35rem 1.25rem; color: var(--muted);
+      text-decoration: none; font-size: .88rem; transition: color .15s, background .15s;
+      border-left: 2px solid transparent;
+    }
+    nav ul li a:hover { color: var(--text); background: var(--surface2); }
+    nav ul li a.active { color: var(--accent2); border-left-color: var(--accent); background: var(--surface2); }
+    nav ul li.section {
+      font-size: .7rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      padding: .75rem 1.25rem .25rem;
+    }
+
+    main {
+      flex: 1;
+      padding: 2.5rem 3rem;
+      max-width: 860px;
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-size: 1.9rem; font-weight: 800; color: var(--accent2);
+      margin-bottom: .4rem;
+    }
+    .subtitle { color: var(--muted); margin-bottom: 2.5rem; font-size: .95rem; }
+
+    h2 {
+      font-size: 1.25rem; font-weight: 700; color: var(--text);
+      margin: 2.5rem 0 .75rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h2 .icon { color: var(--accent); margin-right: .4rem; }
+
+    h3 { font-size: 1rem; font-weight: 700; color: var(--accent2); margin: 1.5rem 0 .5rem; }
+
+    p { margin-bottom: .75rem; color: var(--text); }
+
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Code ── */
+    code {
+      background: var(--surface2); color: var(--accent2);
+      padding: .15em .4em; border-radius: .3rem; font-size: .88em;
+      font-family: "Cascadia Code", "Consolas", monospace;
+    }
+    pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: .5rem; padding: 1rem 1.25rem;
+      overflow-x: auto; margin: .75rem 0;
+    }
+    pre code { background: none; padding: 0; font-size: .88rem; color: var(--accent2); }
+
+    /* ── Callouts ── */
+    .callout {
+      border-radius: .5rem; padding: .75rem 1rem; margin: 1rem 0;
+      display: flex; gap: .75rem; align-items: flex-start;
+      border: 1px solid;
+    }
+    .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .1rem; }
+    .callout.tip    { background: rgba(79,110,247,.1); border-color: rgba(79,110,247,.35); }
+    .callout.tip    .callout-icon { color: var(--accent2); }
+    .callout.warn   { background: rgba(234,179,8,.1);  border-color: rgba(234,179,8,.35);  }
+    .callout.warn   .callout-icon { color: var(--warning); }
+    .callout.danger { background: rgba(239,68,68,.1);  border-color: rgba(239,68,68,.35);  }
+    .callout.danger .callout-icon { color: var(--danger); }
+
+    /* ── Screenshot placeholder ── */
+    .screenshot {
+      background: var(--surface2); border: 1px dashed var(--border);
+      border-radius: .5rem; padding: 2rem; text-align: center;
+      color: var(--muted); font-size: .85rem; margin: 1rem 0;
+      min-height: 140px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: .4rem;
+    }
+    .screenshot .sc-title { font-weight: 600; color: var(--text); font-size: .9rem; }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-block; padding: .2em .5em; border-radius: .35rem;
+      font-size: .8rem; font-weight: 600; white-space: nowrap;
+    }
+    .badge-pending  { background: rgba(79,110,247,.2);  color: #818cf8; }
+    .badge-check    { background: rgba(245,158,11,.2);  color: #fbbf24; }
+    .badge-success  { background: rgba(34,197,94,.2);   color: #4ade80; }
+    .badge-failed   { background: rgba(249,115,22,.2);  color: #fb923c; }
+    .badge-rejected { background: rgba(107,114,142,.2); color: #94a3b8; }
+    .badge-critical { background: rgba(239,68,68,.2);   color: #f87171; border: 1px solid rgba(239,68,68,.4); }
+    .badge-warning  { background: rgba(234,179,8,.2);   color: #facc15; border: 1px solid rgba(234,179,8,.4); }
+    .badge-info     { background: rgba(107,114,142,.2); color: #94a3b8; border: 1px solid rgba(107,114,142,.4); }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; margin: .75rem 0; }
+    th {
+      background: var(--surface2); color: var(--accent2);
+      padding: .5rem .75rem; font-size: .8rem; text-transform: uppercase;
+      letter-spacing: .05em; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: .5rem .75rem; border-bottom: 1px solid var(--border);
+      font-size: .9rem; vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Steps ── */
+    .steps { counter-reset: step; list-style: none; }
+    .steps li {
+      counter-increment: step;
+      display: flex; gap: .75rem; margin-bottom: .75rem; align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      background: var(--accent); color: #fff;
+      width: 1.5rem; height: 1.5rem; border-radius: 50%;
+      font-size: .8rem; font-weight: 700; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: .15rem;
+    }
+
+    /* ── Workflow diagram ── */
+    .workflow {
+      display: flex; align-items: center; flex-wrap: wrap; gap: .4rem;
+      margin: .75rem 0;
+    }
+    .workflow .arrow { color: var(--muted); font-size: 1.1rem; }
+
+    /* ── Section anchor offset for sticky nav ── */
+    section { scroll-margin-top: 1.5rem; }
+
+    @media (max-width: 768px) {
+      .page-wrap { flex-direction: column; }
+      nav { width: 100%; height: auto; position: static; }
+      main { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- ════════════════════════ NAVIGATION ════════════════════════ -->
+<nav>
+  <div class="logo">📡 FritzBox Viewer</div>
+  <ul>
+    <li class="section">Einstieg</li>
+    <li><a href="#uebersicht">Übersicht</a></li>
+    <li><a href="#voraussetzungen">Voraussetzungen</a></li>
+    <li><a href="#start">App starten</a></li>
+    <li><a href="#erstkonfiguration">Erstkonfiguration</a></li>
+
+    <li class="section">Hauptseite</li>
+    <li><a href="#protokoll">Protokoll (Links)</a></li>
+    <li><a href="#ki-analyse">KI-Analyse (Rechts)</a></li>
+    <li><a href="#probleme">Problemtabelle</a></li>
+    <li><a href="#detail">Detailseite</a></li>
+    <li><a href="#status">Statusworkflow</a></li>
+
+    <li class="section">Weitere Funktionen</li>
+    <li><a href="#kommentare">Kommentare &amp; Markdown</a></li>
+    <li><a href="#export">Export &amp; Import</a></li>
+    <li><a href="#manuell">Manuelles Problem</a></li>
+
+    <li class="section">Referenz</li>
+    <li><a href="#kategorien">Log-Kategorien</a></li>
+    <li><a href="#schweregrade">Schweregrade</a></li>
+    <li><a href="#fehlerbehebung">Fehlerbehebung</a></li>
+  </ul>
+</nav>
+
+<!-- ════════════════════════ CONTENT ════════════════════════════ -->
+<main>
+
+  <h1>FritzBox Viewer</h1>
+  <p class="subtitle">Anleitung · Version 1.0</p>
+
+  <!-- ── Übersicht ── -->
+  <section id="uebersicht">
+    <h2><span class="icon">🏠</span>Übersicht</h2>
+    <p>
+      FritzBox Viewer ist eine lokale Webanwendung, die Ereignisprotokolle deiner
+      FritzBox automatisch abruft, übersichtlich darstellt und mittels KI (Anthropic Claude)
+      analysieren kann.
+    </p>
+    <p>Die Anwendung läuft vollständig auf deinem eigenen Rechner — keine Daten verlassen dein Heimnetz, außer beim optionalen KI-Analyse-Aufruf über die Anthropic API.</p>
+
+    <h3>Was kann die App?</h3>
+    <table>
+      <tr><th>Funktion</th><th>Beschreibung</th></tr>
+      <tr><td>Protokoll-Abruf</td><td>Automatischer und manueller Abruf der FritzBox-Ereignisse über TR-064</td></tr>
+      <tr><td>Übersicht &amp; Filter</td><td>Logs nach Kategorie filtern, durchsuchen, sortieren</td></tr>
+      <tr><td>KI-Analyse</td><td>Claude analysiert die letzten 400 Einträge und findet Auffälligkeiten</td></tr>
+      <tr><td>Problemverwaltung</td><td>Probleme und Maßnahmen mit Status und Kommentaren verwalten</td></tr>
+      <tr><td>Export</td><td>Logs oder vollständige Probleme/Maßnahmen als Textdatei exportieren</td></tr>
+      <tr><td>Import</td><td>KI-Chat-Antworten direkt zurück in die App importieren</td></tr>
+    </table>
+  </section>
+
+  <!-- ── Voraussetzungen ── -->
+  <section id="voraussetzungen">
+    <h2><span class="icon">✅</span>Voraussetzungen</h2>
+
+    <h3>Software</h3>
+    <ul class="steps">
+      <li><strong>Python 3.11 oder neuer</strong> — <a href="https://www.python.org/downloads/">python.org/downloads</a></li>
+      <li><strong>Pip-Abhängigkeiten</strong> — werden beim ersten Start automatisch installiert (wenn <code>start.bat</code> verwendet wird) oder manuell via <code>pip install -r requirements.txt</code></li>
+    </ul>
+
+    <h3>FritzBox</h3>
+    <ul class="steps">
+      <li>Ein FritzBox-Benutzer mit Berechtigung <strong>„Fritz!Box-Einstellungen"</strong> (empfohlen) oder mindestens <strong>„Smart Home"</strong></li>
+      <li>TR-064 muss aktiviert sein: FritzBox-Oberfläche → <em>Heimnetz → Netzwerk → Einstellungen → Heimnetzübersicht</em> → „Zugriff für Anwendungen zulassen" aktivieren</li>
+    </ul>
+
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      <div>Ohne die Berechtigung „Fritz!Box-Einstellungen" kann der Vollzugriff auf das Ereignisprotokoll eingeschränkt sein. In diesem Fall nur wenige Einträge abrufbar.</div>
+    </div>
+
+    <h3>Für KI-Analyse (optional)</h3>
+    <p>Ein gültiger <strong>Anthropic API-Key</strong> — erhältlich unter <a href="https://console.anthropic.com">console.anthropic.com</a>. Dieser wird nur für die direkte KI-Analyse in der App benötigt. Für den manuellen Chat-Workflow (Export → KI-Chat → Import) ist kein API-Key erforderlich.</p>
+  </section>
+
+  <!-- ── App starten ── -->
+  <section id="start">
+    <h2><span class="icon">▶️</span>App starten</h2>
+
+    <h3>Normaler Start</h3>
+    <pre><code>python run.py</code></pre>
+    <p>Die App startet und zeigt folgende Ausgabe:</p>
+    <pre><code>  ┌─────────────────────────────────────────┐
+  │         FritzBox Viewer                 │
+  │                                         │
+  │   Oberfläche:  http://localhost:8000    │
+  │   Admin:       http://localhost:8000/admin │
+  └─────────────────────────────────────────┘
+
+  Mit Strg+C beenden.</code></pre>
+    <p>Danach den Browser öffnen und zu <a href="http://localhost:8000">http://localhost:8000</a> navigieren.</p>
+
+    <h3>Debug-Start (bei Problemen)</h3>
+    <pre><code>python run.py --debug</code></pre>
+    <p>Zeigt ausführliche Logausgaben in der Konsole — hilfreich bei Verbindungsproblemen mit der FritzBox.</p>
+
+    <div class="callout warn">
+      <span class="callout-icon">⚠️</span>
+      <div>Die App läuft lokal und ist nur von Geräten im selben Netzwerk erreichbar (<code>http://&lt;IP-Adresse&gt;:8000</code>). Es gibt keine Benutzeranmeldung.</div>
+    </div>
+  </section>
+
+  <!-- ── Erstkonfiguration ── -->
+  <section id="erstkonfiguration">
+    <h2><span class="icon">⚙️</span>Erstkonfiguration</h2>
+    <p>
+      Beim ersten Start ist die Datenbank leer. Bitte zuerst die Admin-Seite aufrufen:
+      <a href="http://localhost:8000/admin">http://localhost:8000/admin</a>
+    </p>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong>FritzBox-Adresse</strong><br>
+          Standard: <code>fritz.box</code>. Alternativ die IP-Adresse, z.B. <code>192.168.178.1</code>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Benutzername &amp; Passwort</strong><br>
+          Der FritzBox-Benutzer mit TR-064-Berechtigung. Nicht das WLAN-Passwort, sondern ein angelegter Benutzer unter <em>System → Fritz!Box-Benutzer</em>.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Abrufintervall</strong><br>
+          Wie oft (in Minuten) die App automatisch neue Logs abruft. Standard: 15 Minuten. Mindestens 5 empfohlen.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Anthropic API-Key (optional)</strong><br>
+          Nur nötig für die direkte KI-Analyse in der App. Beginnt mit <code>sk-ant-</code>.
+        </div>
+      </li>
+    </ol>
+
+    <p>Anschließend <strong>Einstellungen speichern</strong> klicken und zurück zur Hauptseite navigieren.</p>
+
+    <div class="screenshot">
+      <span class="sc-title">Screenshot: Admin-Seite</span>
+      <span>Formular mit FritzBox-Verbindungseinstellungen und API-Key</span>
+    </div>
+  </section>
+
+  <!-- ── Protokoll ── -->
+  <section id="protokoll">
+    <h2><span class="icon">📋</span>Protokoll (linke Spalte)</h2>
+
+    <div class="screenshot">
+      <span class="sc-title">Screenshot: Hauptseite — Protokollansicht</span>
+      <span>Linke Spalte mit Filtern, Tabelle und Toolbar</span>
+    </div>
+
+    <h3>Toolbar</h3>
+    <table>
+      <tr><th>Schaltfläche</th><th>Funktion</th></tr>
+      <tr><td><strong>Abrufen</strong></td><td>Sofortiger manueller Abruf der aktuellen FritzBox-Logs</td></tr>
+      <tr><td><strong>Logs herunterladen</strong></td><td>Exportiert alle Logs als <code>.txt</code>-Datei</td></tr>
+      <tr><td><strong>Systemprompt</strong></td><td>Öffnet einen vorgefertigten Prompt zum Kopieren für den manuellen KI-Chat-Workflow</td></tr>
+    </table>
+
+    <h3>Kategoriefilter</h3>
+    <p>Über die farbigen Schaltflächen lassen sich Einträge nach Kategorie filtern. Die DataTable bietet zusätzlich eine Freitextsuche und Sortierung nach jeder Spalte.</p>
+
+    <h3>Automatischer Abruf</h3>
+    <p>Im Hintergrund ruft die App automatisch in dem in der Admin-Seite konfigurierten Intervall neue Logs ab. Die Statusanzeige im Header zeigt den letzten Abrufzeitpunkt und eventuelle Fehler.</p>
+  </section>
+
+  <!-- ── KI-Analyse ── -->
+  <section id="ki-analyse">
+    <h2><span class="icon">🤖</span>KI-Analyse (rechte Spalte)</h2>
+
+    <p>
+      Die rechte Spalte zeigt alle erfassten Probleme und Maßnahmen in einer Tabelle.
+      Oben in der Toolbar befinden sich die Aktionen:
+    </p>
+
+    <table>
+      <tr><th>Schaltfläche</th><th>Funktion</th></tr>
+      <tr><td><strong>KI-Analyse</strong></td><td>Sendet die letzten 400 Logeinträge plus den bisherigen Problemstatus an Claude und speichert neue Probleme/Maßnahmen</td></tr>
+      <tr><td><strong>Neu</strong></td><td>Problem manuell anlegen (ohne KI)</td></tr>
+      <tr><td><strong>Vollexport</strong></td><td>Exportiert Logs + alle Probleme/Maßnahmen als <code>.txt</code> und öffnet automatisch den Systemprompt für den Import-Workflow</td></tr>
+      <tr><td><strong>Import</strong></td><td>JSON-Antwort aus KI-Chat direkt importieren</td></tr>
+      <tr><td><strong>Prompt</strong></td><td>Systemprompt für den Vollexport-Workflow anzeigen und kopieren</td></tr>
+    </table>
+
+    <h3>Manueller KI-Chat-Workflow</h3>
+    <p>Für den Fall, dass kein API-Key vorhanden ist oder eine andere KI verwendet werden soll:</p>
+    <ol class="steps">
+      <li>Auf <strong>Vollexport</strong> klicken — Datei wird heruntergeladen, Systemprompt-Modal öffnet sich automatisch</li>
+      <li>Systemprompt kopieren und in den KI-Chat (z.B. Claude.ai) einfügen</li>
+      <li>Die heruntergeladene Exportdatei in den Chat hochladen</li>
+      <li>Antwort des KI-Chats (JSON-Array) kopieren</li>
+      <li>In der App auf <strong>Import</strong> klicken und die Antwort einfügen</li>
+    </ol>
+
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      <div>Der Systemprompt enthält bereits das genaue JSON-Ausgabeformat, sodass die KI-Antwort direkt importiert werden kann.</div>
+    </div>
+  </section>
+
+  <!-- ── Problemtabelle ── -->
+  <section id="probleme">
+    <h2><span class="icon">📊</span>Problemtabelle</h2>
+
+    <p>Die Tabelle zeigt alle erfassten Probleme mit folgenden Spalten:</p>
+    <table>
+      <tr><th>Spalte</th><th>Bedeutung</th></tr>
+      <tr><td><strong>Sev.</strong></td><td>Schweregrad: <span class="badge badge-critical">KRIT</span> <span class="badge badge-warning">WARN</span> <span class="badge badge-info">INFO</span></td></tr>
+      <tr><td><strong>Titel</strong></td><td>Klickbar — öffnet die Detailseite. Darunter die Kategorie-Badge.</td></tr>
+      <tr><td><strong>Status</strong></td><td>Aktueller Bearbeitungsstand (siehe Statusworkflow)</td></tr>
+      <tr><td><strong>Maßnahmen</strong></td><td>Anzahl offener vs. Gesamtanzahl Maßnahmen. Gelb = noch offen, Grün = alle erledigt.</td></tr>
+      <tr><td><strong>Datum</strong></td><td>Wann das Problem erfasst wurde</td></tr>
+    </table>
+
+    <p>Der farbige linke Rand jeder Zeile entspricht dem aktuellen Status.</p>
+  </section>
+
+  <!-- ── Detailseite ── -->
+  <section id="detail">
+    <h2><span class="icon">🔍</span>Detailseite eines Problems</h2>
+    <p>Ein Klick auf einen Titel in der Problemtabelle öffnet die Detailseite (<code>/problems/{id}</code>).</p>
+
+    <div class="screenshot">
+      <span class="sc-title">Screenshot: Detailseite</span>
+      <span>Vollbildansicht mit Problem-Header, Kommentarthread und Maßnahmenliste</span>
+    </div>
+
+    <p>Die Detailseite zeigt:</p>
+    <ul style="margin: .5rem 0 .75rem 1.25rem;">
+      <li>Vollständige Problembeschreibung (Markdown gerendert)</li>
+      <li>Kommentarthread unter dem Problem</li>
+      <li>Status-Schaltflächen für das Problem</li>
+      <li>Alle zugehörigen Maßnahmen, jeweils mit Beschreibung, Kommentarthread und Status-Schaltflächen</li>
+    </ul>
+    <p>Mit dem <strong>← Zurück</strong>-Button in der Kopfzeile gelangt man zurück zur Hauptseite.</p>
+  </section>
+
+  <!-- ── Statusworkflow ── -->
+  <section id="status">
+    <h2><span class="icon">🔄</span>Statusworkflow</h2>
+    <p>Probleme und Maßnahmen durchlaufen folgende Status:</p>
+
+    <div class="workflow">
+      <span class="badge badge-pending">Offen</span>
+      <span class="arrow">→</span>
+      <span class="badge badge-check">In Prüfung</span>
+      <span class="arrow">→</span>
+      <span class="badge badge-success">Erfolgreich</span>
+    </div>
+    <div class="workflow">
+      <span class="badge badge-pending">Offen</span>
+      <span class="arrow">→</span>
+      <span class="badge badge-check">In Prüfung</span>
+      <span class="arrow">→</span>
+      <span class="badge badge-failed">Nicht erfolgreich</span>
+    </div>
+    <div class="workflow">
+      <span class="badge badge-pending">Offen</span>
+      <span class="arrow">→</span>
+      <span class="badge badge-rejected">Abgelehnt</span>
+    </div>
+
+    <table style="margin-top:1rem">
+      <tr><th>Status</th><th>Bedeutung</th><th>KI-Verhalten bei Folgeanalyse</th></tr>
+      <tr>
+        <td><span class="badge badge-pending">Offen</span></td>
+        <td>Noch nicht bearbeitet</td>
+        <td>Wird als „noch offen" weitergegeben</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-check">In Prüfung</span></td>
+        <td>Maßnahme wurde umgesetzt, Wirksamkeit wird noch geprüft</td>
+        <td>Wird wie „nicht erfolgreich" behandelt — alternative Maßnahmen können vorgeschlagen werden</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-success">Erfolgreich</span></td>
+        <td>Problem gelöst / Maßnahme hat gewirkt</td>
+        <td>Wird <strong>nicht</strong> erneut empfohlen</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-failed">Nicht erfolgreich</span></td>
+        <td>Maßnahme hatte keine Wirkung</td>
+        <td>KI schlägt <strong>alternative Maßnahmen</strong> vor</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-rejected">Abgelehnt</span></td>
+        <td>Bewusst nicht umgesetzt (z.B. Gastnetz für IoT gewünscht)</td>
+        <td>Wird nur bei <strong>kritischem Sicherheitsrisiko</strong> erneut empfohlen</td>
+      </tr>
+    </table>
+
+    <p>Jeder Status kann über <strong>Zurücksetzen</strong> wieder auf „Offen" gesetzt werden.</p>
+  </section>
+
+  <!-- ── Kommentare ── -->
+  <section id="kommentare">
+    <h2><span class="icon">💬</span>Kommentare &amp; Markdown</h2>
+
+    <h3>Kommentare hinzufügen</h3>
+    <p>
+      Auf der Detailseite können sowohl Probleme als auch einzelne Maßnahmen mit beliebig vielen
+      Kommentaren versehen werden — ähnlich einem Forumsthread. Jeder Kommentar wird mit Zeitstempel gespeichert.
+    </p>
+    <p>Kommentar senden: Text eingeben und <kbd>Strg</kbd>+<kbd>Enter</kbd> drücken oder auf den Senden-Button klicken.</p>
+
+    <h3>Markdown</h3>
+    <p>Beschreibungen und Kommentare unterstützen Markdown-Formatierung:</p>
+    <table>
+      <tr><th>Markdown</th><th>Ergebnis</th></tr>
+      <tr><td><code>**fett**</code></td><td><strong>fett</strong></td></tr>
+      <tr><td><code>*kursiv*</code></td><td><em>kursiv</em></td></tr>
+      <tr><td><code>`code`</code></td><td><code>code</code></td></tr>
+      <tr><td><code>- Punkt 1</code></td><td>Aufzählungsliste</td></tr>
+      <tr><td><code>1. Schritt 1</code></td><td>Nummerierte Liste</td></tr>
+      <tr><td><code>## Überschrift</code></td><td>Überschrift</td></tr>
+    </table>
+
+    <h3>Kommentare in KI-Folgeanalysen</h3>
+    <p>
+      Alle Kommentare werden bei der nächsten KI-Analyse (direkt oder via Import)
+      als Kontext mitgeliefert. Schreibe z.B.:
+    </p>
+    <ul style="margin: .5rem 0 .75rem 1.25rem;">
+      <li><em>„Neustart hat nichts gebracht, Problem besteht weiter"</em> → KI schlägt alternative Maßnahmen vor</li>
+      <li><em>„Gastnetz wird bewusst für IoT-Geräte genutzt"</em> → KI respektiert die Ablehnung</li>
+    </ul>
+  </section>
+
+  <!-- ── Export & Import ── -->
+  <section id="export">
+    <h2><span class="icon">📤</span>Export &amp; Import</h2>
+
+    <h3>Logs-Export</h3>
+    <p>Toolbar links → <strong>Logs herunterladen</strong>: Exportiert alle gespeicherten Logeinträge als chronologische Textdatei (<code>fritzbox_logs_YYYYMMDD_HHmm.txt</code>).</p>
+
+    <h3>Vollexport</h3>
+    <p>Toolbar rechts → <strong>Vollexport</strong>: Exportiert Logs <em>und</em> alle Probleme/Maßnahmen mit Status und Kommentaren. Dateiname: <code>fritzbox_vollexport_YYYYMMDD_HHmm.txt</code></p>
+    <p>Nach dem Download öffnet sich automatisch das Systemprompt-Modal für den Chat-Workflow.</p>
+
+    <h3>Import aus KI-Chat</h3>
+    <p>Toolbar rechts → <strong>Import</strong>: Öffnet ein Modal zum Einfügen einer JSON-Antwort aus dem KI-Chat. Das erwartete Format:</p>
+    <pre><code>[
+  {
+    "title": "Kurzer Problemtitel",
+    "description": "Detaillierte Beschreibung.",
+    "severity": "warning",
+    "category": "security",
+    "measures": [
+      { "title": "Maßnahme 1", "description": "Konkrete Schritte..." }
+    ]
+  }
+]</code></pre>
+    <p>Erlaubte Werte für <code>severity</code>: <code>critical</code>, <code>warning</code>, <code>info</code></p>
+    <p>Erlaubte Werte für <code>category</code>: <code>internet</code>, <code>wifi</code>, <code>phone</code>, <code>security</code>, <code>system</code>, <code>mobile</code>, <code>info</code></p>
+  </section>
+
+  <!-- ── Manuelles Problem ── -->
+  <section id="manuell">
+    <h2><span class="icon">✏️</span>Problem manuell anlegen</h2>
+    <p>
+      Über <strong>Neu</strong> in der Toolbar der rechten Spalte kann ein Problem ohne KI-Analyse
+      manuell angelegt werden. Pflichtfelder sind Titel und Beschreibung.
+      Schweregrad und Kategorie sind optional.
+    </p>
+    <p>Manuell angelegte Probleme verhalten sich identisch zu KI-generierten: Sie können mit Maßnahmen und Kommentaren versehen werden und fließen in Folgeanalysen ein.</p>
+
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      <div>Maßnahmen können aktuell nur über KI-Analyse oder Import hinzugefügt werden. Manuell angelegte Probleme beginnen ohne Maßnahmen.</div>
+    </div>
+  </section>
+
+  <!-- ── Kategorien ── -->
+  <section id="kategorien">
+    <h2><span class="icon">🏷️</span>Log-Kategorien</h2>
+    <table>
+      <tr><th>Kategorie</th><th>Bedeutung</th><th>Typische Ereignisse</th></tr>
+      <tr><td><code>internet</code></td><td>Internetverbindung / DSL</td><td>Verbindungsaufbau, Einwahl, Trennung, DSL-Sync</td></tr>
+      <tr><td><code>wifi</code></td><td>WLAN</td><td>Geräte verbinden/trennen, WLAN-Kanal, WPS</td></tr>
+      <tr><td><code>phone</code></td><td>Telefonie</td><td>SIP-Anmeldung, Anrufe, Rufnummern</td></tr>
+      <tr><td><code>security</code></td><td>Sicherheit</td><td>Firewall-Blocks, Portscans, Login-Fehler</td></tr>
+      <tr><td><code>system</code></td><td>System</td><td>Firmware-Update, Neustart, Zeitserver</td></tr>
+      <tr><td><code>mobile</code></td><td>Mobilfunk / USB</td><td>LTE/5G-Backup, USB-Stick</td></tr>
+      <tr><td><code>info</code></td><td>Allgemeine Info</td><td>Sonstige Ereignisse</td></tr>
+      <tr><td><code>error</code></td><td>Fehler</td><td>Allgemeine Fehlermeldungen (Fallback)</td></tr>
+      <tr><td><code>warning</code></td><td>Warnung</td><td>Allgemeine Warnungen (Fallback)</td></tr>
+    </table>
+  </section>
+
+  <!-- ── Schweregrade ── -->
+  <section id="schweregrade">
+    <h2><span class="icon">⚠️</span>Schweregrade (KI-Analyse)</h2>
+    <table>
+      <tr><th>Schweregrad</th><th>Bedeutung</th><th>Beispiele</th></tr>
+      <tr>
+        <td><span class="badge badge-critical">KRITISCH</span></td>
+        <td>Unmittelbarer Handlungsbedarf</td>
+        <td>Wiederholte Login-Fehler, aktiver Portscan, kompromittiertes Gerät</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-warning">WARNUNG</span></td>
+        <td>Sollte zeitnah geprüft werden</td>
+        <td>Häufige Verbindungsabbrüche, veraltete Firmware, DHCP-Konflikte</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-info">INFO</span></td>
+        <td>Zur Kenntnis nehmen</td>
+        <td>Regelmäßige Zwangstrennung, normale Betriebsereignisse</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ── Fehlerbehebung ── -->
+  <section id="fehlerbehebung">
+    <h2><span class="icon">🔧</span>Fehlerbehebung</h2>
+
+    <h3>Logs werden nicht abgerufen</h3>
+    <ol class="steps">
+      <li>App mit <code>python run.py --debug</code> starten und Ausgabe prüfen</li>
+      <li>Sicherstellen, dass der FritzBox-Benutzer die Berechtigung <strong>„Fritz!Box-Einstellungen"</strong> hat</li>
+      <li>TR-064 in der FritzBox aktivieren: Heimnetz → Netzwerk → Einstellungen → „Zugriff für Anwendungen zulassen"</li>
+      <li>FritzBox-Adresse prüfen (<code>fritz.box</code> oder IP direkt)</li>
+    </ol>
+
+    <h3>Nur ein Logeintrag wird abgerufen</h3>
+    <p>Passiert bei einigen FritzBox-Modellen (z.B. 6850 5G) via TR-064 GetDeviceLog. Die App versucht in diesem Fall automatisch die HTTPS eventlog-API als Alternative. Falls das ebenfalls fehlschlägt: Benutzerberechtigung prüfen.</p>
+
+    <h3>KI-Analyse schlägt fehl</h3>
+    <ul style="margin: .5rem 0 .75rem 1.25rem;">
+      <li>API-Key in der Admin-Seite prüfen (beginnt mit <code>sk-ant-</code>)</li>
+      <li>Anthropic-Kontingent prüfen: <a href="https://console.anthropic.com">console.anthropic.com</a></li>
+      <li>Mindestens ein Logeintrag muss vorhanden sein</li>
+    </ul>
+
+    <h3>Import schlägt fehl</h3>
+    <p>Die eingefügte JSON-Antwort muss ein gültiges JSON-Array sein. Häufige Ursache: Die KI hat Markdown-Blöcke (<code>```json ... ```</code>) um die Antwort gesetzt. Diese müssen vor dem Import entfernt werden.</p>
+
+    <div class="callout danger">
+      <span class="callout-icon">⛔</span>
+      <div>Bei zu vielen falschen Anmeldeversuchen sperrt die FritzBox den Benutzer vorübergehend. Die App versucht keine Brute-Force-Anmeldungen, aber nach mehreren Fehlkonfigurationen empfiehlt sich eine kurze Wartezeit.</div>
+    </div>
+
+    <h3>Datenbankdatei</h3>
+    <p>Alle Daten werden in <code>fritzbox_viewer.db</code> (SQLite) im Projektverzeichnis gespeichert. Diese Datei kann als Backup gesichert oder zum Zurücksetzen gelöscht werden (App neu starten um sie neu anzulegen).</p>
+  </section>
+
+</main>
+</div>
+
+<script>
+  // Highlight active nav item based on scroll position
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

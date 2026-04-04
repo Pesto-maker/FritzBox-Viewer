@@ -21,13 +21,15 @@ from . import config_store as cfg
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+_debug = os.environ.get("FRITZ_DEBUG") == "1"
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.DEBUG if _debug else logging.WARNING,
     format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s",
 )
-logging.getLogger("uvicorn").setLevel(logging.INFO)
-logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-logging.getLogger("apscheduler").setLevel(logging.INFO)
+if _debug:
+    logging.getLogger("uvicorn").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    logging.getLogger("apscheduler").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 run_migrations()
