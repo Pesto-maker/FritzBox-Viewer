@@ -51,25 +51,29 @@ def get_fritzbox_logs() -> list[dict]:
 
     logger.info("=== FritzBox Log Fetch START === host=%s user='%s'", host, user)
 
-    # Method 1: TR-064 GetDeviceLog (requires "Fritz!Box-Einstellungen" permission)
-    try:
-        entries = _fetch_via_tr064_getlog(host, user, password)
-        if entries:
-            logger.info("Methode 1 (TR-064 GetDeviceLog): %d Einträge.", len(entries))
-            return entries
-        logger.warning(
-            "TR-064 GetDeviceLog lieferte 0 Einträge — "
-            "fehlende Berechtigung 'Fritz!Box-Einstellungen'? Versuche Methode 2…"
-        )
-    except Exception as exc:
-        logger.warning("Methode 1 fehlgeschlagen: %s — versuche Methode 2…", exc)
-
-    # Method 2: TR-064 CreateUrlSID → HTTPS eventlog REST API
+    # Method 1: TR-064 CreateUrlSID → HTTPS eventlog REST API
+    # Preferred because it returns the full event history (confirmed working).
     try:
         sid = _get_sid_via_tr064(host, user, password)
         entries = _fetch_eventlog_api(host, sid)
-        logger.info("Methode 2 (TR-064-SID + eventlog-API): %d Einträge.", len(entries))
-        return entries
+        if entries:
+            logger.info("Methode 1 (TR-064-SID + eventlog-API): %d Einträge.", len(entries))
+            return entries
+        logger.warning("Methode 1 lieferte 0 Einträge — versuche Methode 2…")
+    except Exception as exc:
+        logger.warning("Methode 1 fehlgeschlagen: %s — versuche Methode 2…", exc)
+
+    # Method 2: TR-064 GetDeviceLog (requires "Fritz!Box-Einstellungen" permission;
+    # may return only a partial log on some firmware versions)
+    try:
+        entries = _fetch_via_tr064_getlog(host, user, password)
+        if entries:
+            logger.info("Methode 2 (TR-064 GetDeviceLog): %d Einträge.", len(entries))
+            return entries
+        logger.warning(
+            "TR-064 GetDeviceLog lieferte 0 Einträge — "
+            "fehlende Berechtigung 'Fritz!Box-Einstellungen'? Versuche Methode 3…"
+        )
     except Exception as exc:
         logger.warning("Methode 2 fehlgeschlagen: %s — versuche Methode 3…", exc)
 

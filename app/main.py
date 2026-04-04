@@ -322,6 +322,43 @@ def api_export_full(db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 
+@app.post("/api/ai/import")
+def api_ai_import(data: dict, db: Session = Depends(get_db)):
+    """Import AI analysis results (JSON array of problems with measures) from chat export."""
+    import time as _time
+    problems = data.get("problems")
+    if not isinstance(problems, list):
+        return {"status": "error", "message": "Erwartet: {\"problems\": [...]}"}
+
+    required = {"title", "description", "severity"}
+    run_id = int(_time.time())
+    count = 0
+    for prob in problems:
+        if not isinstance(prob, dict) or not required.issubset(prob.keys()):
+            continue
+        p = AiProblem(
+            run_id=run_id,
+            title=prob["title"],
+            description=prob["description"],
+            severity=prob.get("severity", "info"),
+            category=prob.get("category"),
+            status="pending",
+        )
+        db.add(p)
+        db.flush()
+        for m in prob.get("measures", []):
+            if isinstance(m, dict) and "title" in m and "description" in m:
+                db.add(AiMeasure(
+                    problem_id=p.id,
+                    title=m["title"],
+                    description=m["description"],
+                    status="pending",
+                ))
+        count += 1
+    db.commit()
+    return {"status": "ok", "count": count}
+
+
 @app.post("/api/ai/analyze")
 def api_ai_analyze(db: Session = Depends(get_db)):
     from .ai_analyzer import run_analysis

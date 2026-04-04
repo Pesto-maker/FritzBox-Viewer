@@ -279,9 +279,12 @@
           <button class="btn btn-sm btn-outline-info" id="btnAnalyze" onclick="startAnalysis()">
             <i class="bi bi-robot me-1"></i>KI-Analyse starten
           </button>
-          <a href="/api/export/full" class="btn btn-sm btn-outline-light" download>
+          <button class="btn btn-sm btn-outline-light" onclick="downloadFullExport()">
             <i class="bi bi-download me-1"></i>Vollexport
-          </a>
+          </button>
+          <button class="btn btn-sm btn-outline-success" onclick="openImportModal()">
+            <i class="bi bi-upload me-1"></i>Importieren
+          </button>
           <button class="btn btn-sm btn-outline-info" onclick="openSystemPromptModal('full')">
             <i class="bi bi-clipboard me-1"></i>Systemprompt
           </button>
@@ -303,6 +306,37 @@
 
   </div><!-- /row -->
 </main>
+
+<!-- ════════════════════════════════════════════════════════ IMPORT MODAL -->
+<div class="modal fade" id="importModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background:var(--fb-surface);border-color:var(--fb-border)">
+      <div class="modal-header" style="border-color:var(--fb-border)">
+        <h5 class="modal-title" style="color:var(--fb-accent2)">
+          <i class="bi bi-upload me-2"></i>KI-Analyse importieren
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small" style="color:var(--fb-muted)">
+          Füge hier die JSON-Antwort des KI-Chats ein. Das Format entspricht dem im
+          Systemprompt beschriebenen Schema (Array mit Problemen und Maßnahmen).
+        </p>
+        <textarea id="importJsonText" class="form-control" rows="14"
+                  placeholder='[{"title":"...","description":"...","severity":"warning","category":"wifi","measures":[{"title":"...","description":"..."}]}]'
+                  style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text);
+                         font-family:monospace;font-size:.78rem;resize:vertical"></textarea>
+        <div id="importError" class="alert alert-danger py-2 small mt-2 d-none"></div>
+      </div>
+      <div class="modal-footer" style="border-color:var(--fb-border)">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+        <button type="button" class="btn btn-success" id="btnImport" onclick="importAnalysis()">
+          <i class="bi bi-upload me-1"></i>Importieren
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════════════ SYSTEM PROMPT MODAL -->
 <div class="modal fade" id="systemPromptModal" tabindex="-1">
@@ -364,7 +398,99 @@ Bitte analysiere die Daten und:
 3. Bei abgelehnten Maßnahmen: Respektiere die Entscheidung, sofern kein kritisches Sicherheitsrisiko vorliegt.
 4. Identifiziere neue Auffälligkeiten in den Logs, die noch nicht als Problem erfasst sind.
 5. Priorisiere deine Empfehlungen (kritisch zuerst).
-6. Gib für jedes Problem 1–3 konkrete, umsetzbare Maßnahmen an.`;
+6. Gib für jedes Problem 1–3 konkrete, umsetzbare Maßnahmen an.
+
+WICHTIG — Ausgabeformat:
+Antworte ausschließlich mit einem JSON-Array ohne Markdown-Blöcke oder Erklärungen,
+damit deine Antwort direkt in den FritzBox Viewer importiert werden kann:
+[
+  {
+    "title": "Kurzer Problemtitel (max. 80 Zeichen)",
+    "description": "Detaillierte Problembeschreibung.",
+    "severity": "critical",
+    "category": "security",
+    "measures": [
+      {
+        "title": "Maßnahme 1 (max. 80 Zeichen)",
+        "description": "Konkrete Umsetzungsschritte."
+      },
+      {
+        "title": "Maßnahme 2 (max. 80 Zeichen)",
+        "description": "Alternative oder ergänzende Maßnahme."
+      }
+    ]
+  }
+]
+Erlaubte severity-Werte: critical | warning | info
+Erlaubte category-Werte: internet | wifi | phone | security | system | mobile | info`;
+
+async function downloadFullExport() {
+  // Trigger download, then show system prompt modal
+  const a = document.createElement('a');
+  a.href = '/api/export/full';
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  // Small delay so browser starts download before modal opens
+  setTimeout(() => openSystemPromptModal('full'), 300);
+}
+
+function openImportModal() {
+  document.getElementById('importJsonText').value = '';
+  document.getElementById('importError').classList.add('d-none');
+  new bootstrap.Modal(document.getElementById('importModal')).show();
+}
+
+async function importAnalysis() {
+  const btn = document.getElementById('btnImport');
+  const errEl = document.getElementById('importError');
+  const raw = document.getElementById('importJsonText').value.trim();
+
+  errEl.classList.add('d-none');
+  if (!raw) {
+    errEl.textContent = 'Bitte JSON-Text einfügen.';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  let problems;
+  try {
+    const parsed = JSON.parse(raw);
+    problems = Array.isArray(parsed) ? parsed : null;
+    if (!problems) throw new Error('Kein JSON-Array');
+  } catch(e) {
+    errEl.textContent = 'Ungültiges JSON: ' + e.message;
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-sm me-1" role="status"></span>Importiere…';
+
+  try {
+    const res  = await fetch('/api/ai/import', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ problems })
+    });
+    const json = await res.json();
+    if (json.status === 'ok') {
+      bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+      await loadProblems();
+      showAnalysisResult('success', `${json.count} Problem(e) importiert.`);
+    } else {
+      errEl.textContent = json.message || 'Unbekannter Fehler';
+      errEl.classList.remove('d-none');
+    }
+  } catch(e) {
+    errEl.textContent = 'Verbindungsfehler: ' + e.message;
+    errEl.classList.remove('d-none');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-upload me-1"></i>Importieren';
+  }
+}
 
 function openSystemPromptModal(type) {
   document.getElementById('systemPromptText').value =
