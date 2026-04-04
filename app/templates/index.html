@@ -5,13 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FritzBox Viewer</title>
 
-  <!-- Bootstrap 5 dark -->
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-  <!-- Bootstrap Icons -->
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-  <!-- DataTables + Bootstrap 5 integration -->
   <link rel="stylesheet"
         href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css" />
 
@@ -41,26 +38,16 @@
       padding: 1rem 1.5rem;
     }
     .fb-logo {
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-size: 1.5rem; font-weight: 700;
       background: linear-gradient(90deg, var(--fb-accent), var(--fb-accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .fb-subtitle {
-      color: var(--fb-muted);
-      font-size: 0.8rem;
-    }
+    .fb-subtitle { color: var(--fb-muted); font-size: 0.8rem; }
 
     /* ── Stat cards ──────────────────────────────────────────── */
     .stat-card {
-      background: var(--fb-surface);
-      border: 1px solid var(--fb-border);
-      border-radius: 0.6rem;
-      padding: 0.75rem 1rem;
-      text-align: center;
-      transition: border-color .2s;
+      background: var(--fb-surface); border: 1px solid var(--fb-border);
+      border-radius: 0.6rem; padding: 0.75rem 1rem; text-align: center; transition: border-color .2s;
     }
     .stat-card:hover { border-color: var(--fb-accent); }
     .stat-card .value { font-size: 1.6rem; font-weight: 700; color: var(--fb-accent2); }
@@ -68,89 +55,55 @@
 
     /* ── Status bar ──────────────────────────────────────────── */
     .status-bar {
-      background: var(--fb-surface2);
-      border: 1px solid var(--fb-border);
-      border-radius: 0.5rem;
-      padding: 0.5rem 1rem;
-      font-size: 0.8rem;
-      color: var(--fb-muted);
+      background: var(--fb-surface2); border: 1px solid var(--fb-border);
+      border-radius: 0.5rem; padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--fb-muted);
     }
     .status-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #6b728e;
-      margin-right: 6px;
-      animation: pulse 2s infinite;
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: #6b728e; margin-right: 6px; animation: pulse 2s infinite;
     }
-    .status-dot.ok   { background: #22c55e; }
-    .status-dot.err  { background: #ef4444; animation: none; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: .3; }
-    }
+    .status-dot.ok  { background: #22c55e; }
+    .status-dot.err { background: #ef4444; animation: none; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 
     /* ── Filter buttons ──────────────────────────────────────── */
     .filter-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; }
     .btn-filter {
-      border-radius: 1rem;
-      padding: .25rem .75rem;
-      font-size: .78rem;
-      font-weight: 600;
-      border: 1px solid transparent;
-      transition: all .15s;
+      border-radius: 1rem; padding: .25rem .75rem; font-size: .78rem;
+      font-weight: 600; border: 1px solid transparent; transition: all .15s;
     }
     .btn-filter.active { box-shadow: 0 0 0 2px var(--fb-accent); }
 
     /* ── DataTable overrides ─────────────────────────────────── */
     #logTable_wrapper .dataTables_filter input,
     #logTable_wrapper .dataTables_length select {
-      background: var(--fb-surface2);
-      border: 1px solid var(--fb-border);
-      color: var(--fb-text);
-      border-radius: 0.4rem;
+      background: var(--fb-surface2); border: 1px solid var(--fb-border);
+      color: var(--fb-text); border-radius: 0.4rem;
     }
     #logTable_wrapper .dataTables_filter input:focus,
     #logTable_wrapper .dataTables_length select:focus {
-      border-color: var(--fb-accent);
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(79,110,247,.25);
+      border-color: var(--fb-accent); outline: none; box-shadow: 0 0 0 2px rgba(79,110,247,.25);
     }
     #logTable_wrapper .dataTables_info,
     #logTable_wrapper .dataTables_paginate { color: var(--fb-muted); font-size: .8rem; }
-
     table#logTable {
-      background: var(--fb-surface);
-      border-color: var(--fb-border);
+      background: var(--fb-surface); border-color: var(--fb-border);
     }
     table#logTable thead th {
-      background: var(--fb-surface2);
-      color: var(--fb-accent2);
-      border-color: var(--fb-border);
-      font-size: .78rem;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      white-space: nowrap;
+      background: var(--fb-surface2); color: var(--fb-accent2); border-color: var(--fb-border);
+      font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
     }
-    table#logTable tbody tr {
-      border-color: var(--fb-border);
-      transition: background .1s;
-    }
+    table#logTable tbody tr { border-color: var(--fb-border); transition: background .1s; }
     table#logTable tbody tr:hover { background: var(--fb-surface2) !important; }
     table#logTable tbody td { font-size: .85rem; vertical-align: middle; }
-
     .page-link { background: var(--fb-surface2) !important; border-color: var(--fb-border) !important; color: var(--fb-text) !important; }
     .page-item.active .page-link { background: var(--fb-accent) !important; border-color: var(--fb-accent) !important; }
     .page-item.disabled .page-link { color: var(--fb-muted) !important; }
 
     /* ── Category badges ─────────────────────────────────────── */
     .badge-cat {
-      font-size: .7rem;
-      font-weight: 600;
-      padding: .25em .55em;
-      border-radius: .4rem;
-      text-transform: uppercase;
-      letter-spacing: .04em;
+      font-size: .7rem; font-weight: 600; padding: .25em .55em;
+      border-radius: .4rem; text-transform: uppercase; letter-spacing: .04em;
     }
     .cat-error    { background: rgba(239,68,68,.2);   color: #f87171; border: 1px solid rgba(239,68,68,.35); }
     .cat-warning  { background: rgba(234,179,8,.2);   color: #facc15; border: 1px solid rgba(234,179,8,.35); }
@@ -162,14 +115,56 @@
     .cat-security { background: rgba(239,68,68,.3);   color: #fca5a5; border: 1px solid rgba(239,68,68,.5); }
     .cat-info     { background: rgba(107,114,142,.2); color: #94a3b8; border: 1px solid rgba(107,114,142,.35); }
 
-    /* ── Misc ────────────────────────────────────────────────── */
-    .spinner-sm { width: 1rem; height: 1rem; }
+    /* ── Layout cards ────────────────────────────────────────── */
     .card-main {
-      background: var(--fb-surface);
-      border: 1px solid var(--fb-border);
-      border-radius: 0.75rem;
+      background: var(--fb-surface); border: 1px solid var(--fb-border); border-radius: 0.75rem;
     }
     .ts-cell { color: var(--fb-muted); font-size: .78rem; white-space: nowrap; }
+    .spinner-sm { width: 1rem; height: 1rem; }
+
+    /* ── Panel toolbar ───────────────────────────────────────── */
+    .panel-toolbar {
+      display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+      padding-bottom: .75rem; border-bottom: 1px solid var(--fb-border); margin-bottom: .75rem;
+    }
+    .panel-title {
+      font-size: .8rem; font-weight: 700; color: var(--fb-accent2);
+      text-transform: uppercase; letter-spacing: .07em; margin-right: auto;
+    }
+
+    /* ── Problems panel ──────────────────────────────────────── */
+    #problemsContainer {
+      max-height: calc(100vh - 320px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    #problemsContainer::-webkit-scrollbar { width: 5px; }
+    #problemsContainer::-webkit-scrollbar-track { background: var(--fb-bg); }
+    #problemsContainer::-webkit-scrollbar-thumb { background: var(--fb-border); border-radius: 3px; }
+
+    /* ── Problem + Measure cards ─────────────────────────────── */
+    .problem-card {
+      background: var(--fb-surface2); border: 1px solid var(--fb-border);
+      border-radius: .5rem; transition: opacity .2s;
+    }
+    .measure-item {
+      background: var(--fb-surface); border: 1px solid var(--fb-border);
+      border-radius: .4rem; transition: opacity .2s;
+    }
+    .run-header {
+      font-size: .72rem; color: var(--fb-muted);
+      display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+      padding: .3rem .5rem; background: var(--fb-bg);
+      border-radius: .4rem; margin-bottom: .5rem;
+    }
+
+    /* ── System prompt modal textarea ────────────────────────── */
+    #systemPromptText {
+      background: var(--fb-surface2); border-color: var(--fb-border);
+      color: var(--fb-text); font-family: monospace; font-size: .8rem;
+      resize: none;
+    }
+    #systemPromptText:focus { border-color: var(--fb-accent); box-shadow: 0 0 0 2px rgba(79,110,247,.25); }
   </style>
 </head>
 <body>
@@ -180,20 +175,11 @@
     <div class="fb-logo"><i class="bi bi-router me-2"></i>FritzBox Viewer</div>
     <div class="fb-subtitle">Ereignisprotokoll — FritzBox 6580 5G</div>
   </div>
-  <div class="d-flex align-items-center gap-2">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
     <div class="status-bar d-flex align-items-center gap-3">
       <span><span class="status-dot" id="statusDot"></span><span id="statusText">Verbinde…</span></span>
       <span id="lastFetch" class="d-none">Letzter Abruf: <strong id="lastFetchTime">—</strong></span>
     </div>
-    <button class="btn btn-sm btn-outline-primary" id="btnFetch" onclick="triggerFetch()">
-      <i class="bi bi-arrow-clockwise me-1"></i>Jetzt abrufen
-    </button>
-    <a href="/api/export/logs" class="btn btn-sm btn-outline-light" download>
-      <i class="bi bi-download me-1"></i>Export
-    </a>
-    <a href="/recommendations" class="btn btn-sm btn-outline-info">
-      <i class="bi bi-robot me-1"></i>KI-Analyse
-    </a>
     <a href="/admin" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-gear me-1"></i>Admin
     </a>
@@ -204,7 +190,7 @@
 <main class="container-fluid p-3 p-md-4">
 
   <!-- Stat cards -->
-  <div class="row g-2 mb-3" id="statCards">
+  <div class="row g-2 mb-3">
     <div class="col-6 col-sm-4 col-md-2">
       <div class="stat-card"><div class="value" id="statTotal">—</div><div class="label">Gesamt</div></div>
     </div>
@@ -227,44 +213,123 @@
 
   <!-- Error alert -->
   <div id="errorAlert" class="alert alert-danger d-none py-2 mb-3" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    <span id="errorMsg"></span>
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><span id="errorMsg"></span>
   </div>
 
-  <!-- Table card -->
-  <div class="card-main p-3">
-    <!-- Filter bar -->
-    <div class="filter-bar mb-3" id="filterBar">
-      <button class="btn-filter btn btn-secondary active" data-cat="">
-        <i class="bi bi-list-ul me-1"></i>Alle
-      </button>
-      <button class="btn-filter btn btn-outline-danger" data-cat="error">Fehler</button>
-      <button class="btn-filter btn btn-outline-warning" data-cat="warning">Warnung</button>
-      <button class="btn-filter btn btn-outline-primary" data-cat="internet">Internet</button>
-      <button class="btn-filter btn btn-outline-info" data-cat="wifi">WLAN</button>
-      <button class="btn-filter btn btn-outline-success" data-cat="phone">Telefon</button>
-      <button class="btn-filter btn btn-outline-secondary" data-cat="mobile" style="color:#c084fc;border-color:#c084fc">Mobile</button>
-      <button class="btn-filter btn btn-outline-warning" data-cat="system" style="color:#fb923c;border-color:#fb923c">System</button>
-      <button class="btn-filter btn btn-outline-danger" data-cat="security" style="color:#fca5a5;border-color:#f87171">Sicherheit</button>
-      <button class="btn-filter btn btn-outline-secondary" data-cat="info">Info</button>
+  <!-- Two-column layout -->
+  <div class="row g-3">
+
+    <!-- ══ LEFT: Log table ══════════════════════════════════ -->
+    <div class="col-xl-7">
+      <div class="card-main p-3">
+
+        <!-- Toolbar -->
+        <div class="panel-toolbar">
+          <span class="panel-title"><i class="bi bi-list-ul me-1"></i>Protokoll</span>
+          <button class="btn btn-sm btn-outline-primary" id="btnFetch" onclick="triggerFetch()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Abrufen
+          </button>
+          <a href="/api/export/logs" class="btn btn-sm btn-outline-light" download>
+            <i class="bi bi-download me-1"></i>Logs herunterladen
+          </a>
+          <button class="btn btn-sm btn-outline-info" onclick="openSystemPromptModal('logs')">
+            <i class="bi bi-clipboard me-1"></i>Systemprompt
+          </button>
+        </div>
+
+        <!-- Category filter -->
+        <div class="filter-bar mb-3" id="filterBar">
+          <button class="btn-filter btn btn-secondary active" data-cat="">
+            <i class="bi bi-list-ul me-1"></i>Alle
+          </button>
+          <button class="btn-filter btn btn-outline-danger" data-cat="error">Fehler</button>
+          <button class="btn-filter btn btn-outline-warning" data-cat="warning">Warnung</button>
+          <button class="btn-filter btn btn-outline-primary" data-cat="internet">Internet</button>
+          <button class="btn-filter btn btn-outline-info" data-cat="wifi">WLAN</button>
+          <button class="btn-filter btn btn-outline-success" data-cat="phone">Telefon</button>
+          <button class="btn-filter btn btn-outline-secondary" data-cat="mobile" style="color:#c084fc;border-color:#c084fc">Mobile</button>
+          <button class="btn-filter btn btn-outline-warning" data-cat="system" style="color:#fb923c;border-color:#fb923c">System</button>
+          <button class="btn-filter btn btn-outline-danger" data-cat="security" style="color:#fca5a5;border-color:#f87171">Sicherheit</button>
+          <button class="btn-filter btn btn-outline-secondary" data-cat="info">Info</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+          <table id="logTable" class="table table-dark table-hover table-sm w-100">
+            <thead>
+              <tr>
+                <th>Zeitstempel</th>
+                <th>Kategorie</th>
+                <th>Nachricht</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- Table -->
-    <div class="table-responsive">
-      <table id="logTable" class="table table-dark table-hover table-sm w-100">
-        <thead>
-          <tr>
-            <th>Zeitstempel</th>
-            <th>Kategorie</th>
-            <th>Nachricht</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody">
-        </tbody>
-      </table>
+    <!-- ══ RIGHT: Problems & Measures ═══════════════════════ -->
+    <div class="col-xl-5">
+      <div class="card-main p-3">
+
+        <!-- Toolbar -->
+        <div class="panel-toolbar">
+          <span class="panel-title"><i class="bi bi-robot me-1"></i>Probleme &amp; Maßnahmen</span>
+          <button class="btn btn-sm btn-outline-info" id="btnAnalyze" onclick="startAnalysis()">
+            <i class="bi bi-robot me-1"></i>KI-Analyse starten
+          </button>
+          <a href="/api/export/full" class="btn btn-sm btn-outline-light" download>
+            <i class="bi bi-download me-1"></i>Vollexport
+          </a>
+          <button class="btn btn-sm btn-outline-info" onclick="openSystemPromptModal('full')">
+            <i class="bi bi-clipboard me-1"></i>Systemprompt
+          </button>
+        </div>
+
+        <!-- Analysis result alert -->
+        <div id="analysisResult" class="d-none alert py-2 small mb-2"></div>
+
+        <!-- Problems (forum format) -->
+        <div id="problemsContainer">
+          <div class="text-center py-4" style="color:var(--fb-muted)">
+            <i class="bi bi-robot" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
+            Noch keine Probleme erfasst.<br>
+            <small>Klicke auf <strong>KI-Analyse starten</strong> oder lade einen Export hoch.</small>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+
+  </div><!-- /row -->
 </main>
+
+<!-- ════════════════════════════════════════════════════════ SYSTEM PROMPT MODAL -->
+<div class="modal fade" id="systemPromptModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background:var(--fb-surface);border-color:var(--fb-border)">
+      <div class="modal-header" style="border-color:var(--fb-border)">
+        <h5 class="modal-title" style="color:var(--fb-accent2)">
+          <i class="bi bi-clipboard me-2"></i>Systemprompt für KI-Chat
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="small" style="color:var(--fb-muted)">
+          Kopiere diesen Text und füge ihn als erste Nachricht in den KI-Chat ein —
+          bevor du die heruntergeladene Export-Datei hochlädst.
+        </p>
+        <textarea id="systemPromptText" class="form-control" rows="12" readonly></textarea>
+      </div>
+      <div class="modal-footer" style="border-color:var(--fb-border)">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+        <button type="button" class="btn btn-primary" id="copyPromptBtn" onclick="copySystemPrompt()">
+          <i class="bi bi-clipboard me-1"></i>Kopieren
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════════════════════════════════════════════════ SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -273,152 +338,427 @@
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-  // ── state ──────────────────────────────────────────────────────────────
-  let activeCategory = "";
-  let table = null;
-  let allData  = [];
+// ── System Prompts ────────────────────────────────────────────────────────
+const SYSTEM_PROMPT_LOGS = `Du bist ein Netzwerk- und Sicherheitsexperte für Heimnetzwerke.
 
-  // ── DataTable init ──────────────────────────────────────────────────────
-  $(document).ready(function () {
-    table = $('#logTable').DataTable({
-      data: [],
-      columns: [
-        { data: 'timestamp', title: 'Zeitstempel',
-          render: (d) => `<span class="ts-cell">${formatTs(d)}</span>` },
-        { data: 'category',  title: 'Kategorie',
-          render: (d) => `<span class="badge-cat cat-${d}">${catLabel(d)}</span>` },
-        { data: 'message',   title: 'Nachricht', orderable: false }
-      ],
-      order: [[0, 'desc']],
-      pageLength: 50,
-      lengthMenu: [25, 50, 100, 250, 500],
-      language: {
-        search:          'Suche:',
-        lengthMenu:      '_MENU_ Einträge',
-        info:            '_START_–_END_ von _TOTAL_ Einträgen',
-        infoEmpty:       '0 Einträge',
-        infoFiltered:    '(gefiltert von _MAX_)',
-        paginate: { first:'«', last:'»', next:'›', previous:'‹' },
-        emptyTable:      'Keine Daten vorhanden',
-        zeroRecords:     'Keine Übereinstimmungen gefunden'
-      },
-      dom: '<"row align-items-center mb-2"<"col-sm-6"l><"col-sm-6"f>>rt<"row align-items-center mt-2"<"col-sm-6"i><"col-sm-6"p>>',
-    });
+Ich lade dir nachfolgend einen Export der FritzBox-Ereignisprotokolle hoch.
+Der Export enthält Logeinträge mit Zeitstempel und Kategorie.
 
-    loadStats();
-    loadLogs();
+Bitte analysiere die Daten und:
+1. Identifiziere Auffälligkeiten, Fehler und mögliche Sicherheitsrisiken.
+2. Priorisiere deine Empfehlungen (kritisch zuerst).
+3. Gib für jedes identifizierte Problem 1–3 konkrete, umsetzbare Maßnahmen an.
+4. Beschränke dich auf tatsächliche Auffälligkeiten — keine generischen Sicherheitstipps.`;
 
-    // auto refresh every 60 s
-    setInterval(() => { loadStats(); loadLogs(); }, 60000);
+const SYSTEM_PROMPT_FULL = `Du bist ein Netzwerk- und Sicherheitsexperte für Heimnetzwerke.
 
-    // category filter buttons
-    document.querySelectorAll('.btn-filter').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeCategory = btn.dataset.cat;
-        renderTable();
-      });
-    });
+Ich lade dir nachfolgend einen vollständigen Export aus dem FritzBox Viewer hoch.
+Der Export enthält:
+- FritzBox-Ereignisprotokolle mit Zeitstempel und Kategorie
+- Identifizierte Probleme mit ihrem aktuellen Bearbeitungsstatus
+- Zugehörige Maßnahmen mit Status (offen / abgelehnt / erfolgreich / nicht erfolgreich) und Kommentaren des Betreibers
+
+Bitte analysiere die Daten und:
+1. Beachte Probleme und Maßnahmen mit Status "erfolgreich" — diese nicht erneut empfehlen.
+2. Bei Maßnahmen mit Status "nicht erfolgreich": Schlage alternative Maßnahmen vor und berücksichtige den Kommentar des Betreibers.
+3. Bei abgelehnten Maßnahmen: Respektiere die Entscheidung, sofern kein kritisches Sicherheitsrisiko vorliegt.
+4. Identifiziere neue Auffälligkeiten in den Logs, die noch nicht als Problem erfasst sind.
+5. Priorisiere deine Empfehlungen (kritisch zuerst).
+6. Gib für jedes Problem 1–3 konkrete, umsetzbare Maßnahmen an.`;
+
+function openSystemPromptModal(type) {
+  document.getElementById('systemPromptText').value =
+    type === 'full' ? SYSTEM_PROMPT_FULL : SYSTEM_PROMPT_LOGS;
+  const btn = document.getElementById('copyPromptBtn');
+  btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Kopieren';
+  new bootstrap.Modal(document.getElementById('systemPromptModal')).show();
+}
+
+function copySystemPrompt() {
+  const text = document.getElementById('systemPromptText').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyPromptBtn');
+    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Kopiert!';
+    setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Kopieren', 2000);
+  });
+}
+
+// ── Logs state + DataTable ─────────────────────────────────────────────────
+let activeCategory = '';
+let table = null;
+let allData = [];
+
+$(document).ready(function () {
+  table = $('#logTable').DataTable({
+    data: [],
+    columns: [
+      { data: 'timestamp', title: 'Zeitstempel',
+        render: (d) => `<span class="ts-cell">${formatTs(d)}</span>` },
+      { data: 'category',  title: 'Kategorie',
+        render: (d) => `<span class="badge-cat cat-${d}">${catLabel(d)}</span>` },
+      { data: 'message',   title: 'Nachricht', orderable: false }
+    ],
+    order: [[0, 'desc']],
+    pageLength: 50,
+    lengthMenu: [25, 50, 100, 250, 500],
+    language: {
+      search: 'Suche:', lengthMenu: '_MENU_ Einträge',
+      info: '_START_–_END_ von _TOTAL_ Einträgen', infoEmpty: '0 Einträge',
+      infoFiltered: '(gefiltert von _MAX_)',
+      paginate: { first:'«', last:'»', next:'›', previous:'‹' },
+      emptyTable: 'Keine Daten vorhanden', zeroRecords: 'Keine Übereinstimmungen'
+    },
+    dom: '<"row align-items-center mb-2"<"col-sm-6"l><"col-sm-6"f>>rt<"row align-items-center mt-2"<"col-sm-6"i><"col-sm-6"p>>',
   });
 
-  // ── data loading ────────────────────────────────────────────────────────
-  async function loadLogs() {
-    try {
-      const res  = await fetch('/api/logs?limit=2000');
-      const json = await res.json();
-      allData = json.entries;
+  loadStats();
+  loadLogs();
+  loadProblems();
+
+  setInterval(() => { loadStats(); loadLogs(); }, 60000);
+
+  document.querySelectorAll('.btn-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategory = btn.dataset.cat;
       renderTable();
-    } catch(e) {
-      showError('Fehler beim Laden der Logs: ' + e.message);
-    }
-  }
-
-  async function loadStats() {
-    try {
-      const res  = await fetch('/api/stats');
-      const json = await res.json();
-
-      document.getElementById('statTotal').textContent   = json.total ?? 0;
-      document.getElementById('statError').textContent   = json.by_category?.error    ?? 0;
-      document.getElementById('statWarning').textContent = json.by_category?.warning  ?? 0;
-      document.getElementById('statInternet').textContent= json.by_category?.internet ?? 0;
-      document.getElementById('statWifi').textContent    = json.by_category?.wifi     ?? 0;
-
-      const other = (json.total ?? 0)
-        - (json.by_category?.error    ?? 0)
-        - (json.by_category?.warning  ?? 0)
-        - (json.by_category?.internet ?? 0)
-        - (json.by_category?.wifi     ?? 0);
-      document.getElementById('statOther').textContent = Math.max(0, other);
-
-      const dot  = document.getElementById('statusDot');
-      const txt  = document.getElementById('statusText');
-      if (json.last_error) {
-        dot.className = 'status-dot err';
-        txt.textContent = 'Letzter Fehler: ' + json.last_error.substring(0, 80);
-        showError(json.last_error);
-      } else {
-        dot.className = 'status-dot ok';
-        txt.textContent = 'Verbunden';
-        document.getElementById('errorAlert').classList.add('d-none');
-      }
-
-      if (json.last_fetch) {
-        document.getElementById('lastFetch').classList.remove('d-none');
-        document.getElementById('lastFetchTime').textContent = formatTs(json.last_fetch);
-      }
-    } catch(e) {
-      document.getElementById('statusDot').className = 'status-dot err';
-      document.getElementById('statusText').textContent = 'API nicht erreichbar';
-    }
-  }
-
-  function renderTable() {
-    let data = allData;
-    if (activeCategory) {
-      data = data.filter(e => e.category === activeCategory);
-    }
-    table.clear().rows.add(data).draw();
-  }
-
-  // ── manual fetch ────────────────────────────────────────────────────────
-  async function triggerFetch() {
-    const btn = document.getElementById('btnFetch');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-sm me-1" role="status"></span>Lädt…';
-    try {
-      await fetch('/api/fetch', { method: 'POST' });
-      await loadStats();
-      await loadLogs();
-    } catch(e) {
-      showError('Manueller Abruf fehlgeschlagen: ' + e.message);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Jetzt abrufen';
-    }
-  }
-
-  // ── helpers ─────────────────────────────────────────────────────────────
-  function formatTs(iso) {
-    const d = new Date(iso);
-    if (isNaN(d)) return iso;
-    return d.toLocaleString('de-DE', {
-      day:'2-digit', month:'2-digit', year:'2-digit',
-      hour:'2-digit', minute:'2-digit', second:'2-digit'
     });
+  });
+});
+
+// ── Logs ───────────────────────────────────────────────────────────────────
+async function loadLogs() {
+  try {
+    const res  = await fetch('/api/logs?limit=2000');
+    const json = await res.json();
+    allData = json.entries;
+    renderTable();
+  } catch(e) {
+    showError('Fehler beim Laden der Logs: ' + e.message);
+  }
+}
+
+async function loadStats() {
+  try {
+    const res  = await fetch('/api/stats');
+    const json = await res.json();
+    document.getElementById('statTotal').textContent    = json.total ?? 0;
+    document.getElementById('statError').textContent    = json.by_category?.error    ?? 0;
+    document.getElementById('statWarning').textContent  = json.by_category?.warning  ?? 0;
+    document.getElementById('statInternet').textContent = json.by_category?.internet ?? 0;
+    document.getElementById('statWifi').textContent     = json.by_category?.wifi     ?? 0;
+    const other = (json.total ?? 0)
+      - (json.by_category?.error ?? 0) - (json.by_category?.warning ?? 0)
+      - (json.by_category?.internet ?? 0) - (json.by_category?.wifi ?? 0);
+    document.getElementById('statOther').textContent = Math.max(0, other);
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    if (json.last_error) {
+      dot.className = 'status-dot err';
+      txt.textContent = 'Letzter Fehler: ' + json.last_error.substring(0, 80);
+      showError(json.last_error);
+    } else {
+      dot.className = 'status-dot ok';
+      txt.textContent = 'Verbunden';
+      document.getElementById('errorAlert').classList.add('d-none');
+    }
+    if (json.last_fetch) {
+      document.getElementById('lastFetch').classList.remove('d-none');
+      document.getElementById('lastFetchTime').textContent = formatTs(json.last_fetch);
+    }
+  } catch(e) {
+    document.getElementById('statusDot').className = 'status-dot err';
+    document.getElementById('statusText').textContent = 'API nicht erreichbar';
+  }
+}
+
+function renderTable() {
+  let data = allData;
+  if (activeCategory) data = data.filter(e => e.category === activeCategory);
+  table.clear().rows.add(data).draw();
+}
+
+async function triggerFetch() {
+  const btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-sm me-1" role="status"></span>Lädt…';
+  try {
+    await fetch('/api/fetch', { method: 'POST' });
+    await loadStats();
+    await loadLogs();
+  } catch(e) {
+    showError('Manueller Abruf fehlgeschlagen: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise me-1"></i>Abrufen';
+  }
+}
+
+// ── Problems ───────────────────────────────────────────────────────────────
+async function loadProblems() {
+  try {
+    const res  = await fetch('/api/ai/problems');
+    const data = await res.json();
+    renderProblems(data);
+  } catch(e) {
+    document.getElementById('problemsContainer').innerHTML =
+      `<div class="text-danger small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Fehler: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderProblems(problems) {
+  const container = document.getElementById('problemsContainer');
+  if (!problems.length) {
+    container.innerHTML = `
+      <div class="text-center py-4" style="color:var(--fb-muted)">
+        <i class="bi bi-robot" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
+        Noch keine Probleme erfasst.<br>
+        <small>Klicke auf <strong>KI-Analyse starten</strong> oder lade einen Export hoch.</small>
+      </div>`;
+    return;
   }
 
-  const CAT_LABELS = {
-    error:'Fehler', warning:'Warnung', internet:'Internet', wifi:'WLAN',
-    phone:'Telefon', mobile:'Mobile', system:'System', security:'Sicherheit', info:'Info'
+  // Group by run_id (already sorted desc by server)
+  const runs = {};
+  const runIds = [];
+  for (const p of problems) {
+    if (!runs[p.run_id]) { runIds.push(p.run_id); runs[p.run_id] = []; }
+    runs[p.run_id].push(p);
+  }
+
+  let html = '';
+  for (const runId of runIds) {
+    const runProbs = runs[runId];
+    const runDate = new Date(runId * 1000).toLocaleString('de-DE', {
+      day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'
+    });
+    const cnt = {
+      pending:  runProbs.filter(p => p.status === 'pending').length,
+      success:  runProbs.filter(p => p.status === 'success').length,
+      failed:   runProbs.filter(p => p.status === 'failed').length,
+      rejected: runProbs.filter(p => p.status === 'rejected').length,
+    };
+    html += `<div class="mb-3">
+      <div class="run-header">
+        <i class="bi bi-calendar3"></i>
+        <span>Analyse vom ${runDate}</span>
+        <span class="ms-auto d-flex gap-1 flex-wrap">
+          ${cnt.pending  ? `<span class="badge" style="background:rgba(79,110,247,.2);color:#818cf8">${cnt.pending} offen</span>` : ''}
+          ${cnt.success  ? `<span class="badge" style="background:rgba(34,197,94,.2);color:#4ade80">${cnt.success} erfolgreich</span>` : ''}
+          ${cnt.failed   ? `<span class="badge" style="background:rgba(249,115,22,.2);color:#fb923c">${cnt.failed} nicht erfolgreich</span>` : ''}
+          ${cnt.rejected ? `<span class="badge" style="background:rgba(107,114,142,.2);color:#94a3b8">${cnt.rejected} abgelehnt</span>` : ''}
+        </span>
+      </div>`;
+    for (const p of runProbs) html += renderProblemCard(p);
+    html += `</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderProblemCard(p) {
+  const borderColor = { pending:'var(--fb-accent)', success:'#22c55e', rejected:'#6b728e', failed:'#f97316' }[p.status] || 'var(--fb-accent)';
+  const opacity = p.status === 'rejected' ? '0.6' : '1';
+
+  const sevBadge = {
+    critical: '<span class="badge me-1" style="background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35)">KRITISCH</span>',
+    warning:  '<span class="badge me-1" style="background:rgba(234,179,8,.2);color:#facc15;border:1px solid rgba(234,179,8,.35)">WARNUNG</span>',
+    info:     '<span class="badge me-1" style="background:rgba(107,114,142,.2);color:#94a3b8;border:1px solid rgba(107,114,142,.35)">INFO</span>',
+  }[p.severity] || '';
+
+  const catIcon = {
+    internet:'bi-globe', wifi:'bi-wifi', phone:'bi-telephone',
+    security:'bi-shield-exclamation', system:'bi-gear', mobile:'bi-phone', info:'bi-info-circle'
+  }[p.category] || 'bi-question-circle';
+
+  const date = new Date(p.created_at).toLocaleString('de-DE',
+    {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+
+  const commentDisplay = p.comment
+    ? `<div class="mt-1" style="font-size:.73rem;color:var(--fb-muted);font-style:italic">
+         <i class="bi bi-chat-left-text me-1"></i>${escHtml(p.comment)}
+       </div>` : '';
+
+  const statusBtns = p.status === 'pending'
+    ? `<button class="btn btn-sm btn-outline-success" style="font-size:.72rem" onclick="updateProblem(${p.id},'success')"><i class="bi bi-check2 me-1"></i>Erfolgreich</button>
+       <button class="btn btn-sm btn-outline-warning" style="font-size:.72rem" onclick="updateProblem(${p.id},'failed')"><i class="bi bi-x-circle me-1"></i>Nicht erfolgreich</button>
+       <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem" onclick="updateProblem(${p.id},'rejected')"><i class="bi bi-dash-circle me-1"></i>Ablehnen</button>`
+    : `<button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem" onclick="updateProblem(${p.id},'pending')"><i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen</button>`;
+
+  const measuresHtml = p.measures.length
+    ? `<div class="mt-2 ps-2" style="border-left:2px solid var(--fb-border)">
+         ${p.measures.map(m => renderMeasure(m)).join('')}
+       </div>` : '';
+
+  return `
+    <div class="problem-card mb-2 p-2" id="prob-${p.id}"
+         style="border-left:3px solid ${borderColor};opacity:${opacity}">
+      <div class="d-flex align-items-start gap-1 flex-wrap mb-1">
+        ${sevBadge}
+        <i class="bi ${catIcon}" style="color:var(--fb-muted);font-size:.85rem;margin-top:3px"></i>
+        <span style="font-size:.85rem;font-weight:600;flex:1;min-width:0">${escHtml(p.title)}</span>
+        ${statusBadgeHtml(p.status)}
+        <span style="font-size:.68rem;color:var(--fb-muted);white-space:nowrap">${date}</span>
+      </div>
+      <div style="font-size:.8rem;color:#b0b8d8;margin-bottom:.4rem">${escHtml(p.description)}</div>
+      ${commentDisplay}
+      ${measuresHtml}
+      <div class="d-flex flex-wrap gap-1 align-items-center mt-2 pt-2" style="border-top:1px solid var(--fb-border)">
+        ${statusBtns}
+        <div class="d-flex gap-1 ms-auto">
+          <input type="text" class="form-control form-control-sm" id="prob-comment-${p.id}"
+                 placeholder="Kommentar…" value="${escHtml(p.comment || '')}"
+                 style="font-size:.72rem;background:var(--fb-surface);border-color:var(--fb-border);
+                        color:var(--fb-text);width:160px" />
+          <button class="btn btn-sm btn-outline-secondary" style="font-size:.72rem"
+                  onclick="saveComment('problem',${p.id})" title="Kommentar speichern">
+            <i class="bi bi-floppy"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderMeasure(m) {
+  const borderColor = { pending:'var(--fb-accent)', success:'#22c55e', rejected:'#6b728e', failed:'#f97316' }[m.status] || 'var(--fb-accent)';
+  const opacity = m.status === 'rejected' ? '0.6' : '1';
+
+  const commentDisplay = m.comment
+    ? `<div style="font-size:.7rem;color:var(--fb-muted);font-style:italic">
+         <i class="bi bi-chat-left-text me-1"></i>${escHtml(m.comment)}
+       </div>` : '';
+
+  const statusBtns = m.status === 'pending'
+    ? `<button class="btn btn-sm btn-outline-success" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'success')" title="Erfolgreich"><i class="bi bi-check2"></i></button>
+       <button class="btn btn-sm btn-outline-warning" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'failed')" title="Nicht erfolgreich"><i class="bi bi-x-circle"></i></button>
+       <button class="btn btn-sm btn-outline-secondary" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'rejected')" title="Ablehnen"><i class="bi bi-dash-circle"></i></button>`
+    : `<button class="btn btn-sm btn-outline-secondary" style="font-size:.68rem;padding:.1rem .35rem" onclick="updateMeasure(${m.id},'pending')" title="Zurücksetzen"><i class="bi bi-arrow-counterclockwise"></i></button>`;
+
+  const statusLbl = { success:'✓ Erfolgreich', failed:'✗ Nicht erfolgreich', rejected:'— Abgelehnt' }[m.status] || '';
+
+  return `
+    <div class="measure-item mb-1 p-2" id="meas-${m.id}"
+         style="border-left:2px solid ${borderColor};opacity:${opacity}">
+      <div class="d-flex align-items-start gap-1 flex-wrap mb-1">
+        <i class="bi bi-arrow-right-short" style="color:var(--fb-muted)"></i>
+        <span style="font-size:.78rem;font-weight:600;flex:1;min-width:0">${escHtml(m.title)}</span>
+        ${statusBadgeHtml(m.status, true)}
+      </div>
+      <div style="font-size:.75rem;color:#b0b8d8;margin-bottom:.3rem">${escHtml(m.description)}</div>
+      ${commentDisplay}
+      <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
+        ${statusBtns}
+        ${statusLbl ? `<span style="font-size:.65rem;color:var(--fb-muted)">${statusLbl}</span>` : ''}
+        <div class="d-flex gap-1 ms-auto">
+          <input type="text" class="form-control form-control-sm" id="meas-comment-${m.id}"
+                 placeholder="Kommentar…" value="${escHtml(m.comment || '')}"
+                 style="font-size:.68rem;background:var(--fb-surface2);border-color:var(--fb-border);
+                        color:var(--fb-text);width:140px" />
+          <button class="btn btn-sm btn-outline-secondary" style="font-size:.68rem;padding:.1rem .35rem"
+                  onclick="saveComment('measure',${m.id})" title="Kommentar speichern">
+            <i class="bi bi-floppy"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function statusBadgeHtml(status, small = false) {
+  const map = {
+    pending:  ['rgba(79,110,247,.2)', '#818cf8',  'Offen'],
+    success:  ['rgba(34,197,94,.2)',  '#4ade80',  'Erfolgreich'],
+    rejected: ['rgba(107,114,142,.2)','#94a3b8',  'Abgelehnt'],
+    failed:   ['rgba(249,115,22,.2)', '#fb923c',  'Nicht erfolgreich'],
   };
-  function catLabel(cat) { return CAT_LABELS[cat] ?? cat; }
+  const [bg, color, label] = map[status] || map['pending'];
+  const fs = small ? '.62rem' : '.65rem';
+  return `<span class="badge" style="background:${bg};color:${color};font-size:${fs};white-space:nowrap">${label}</span>`;
+}
 
-  function showError(msg) {
-    document.getElementById('errorMsg').textContent = msg;
-    document.getElementById('errorAlert').classList.remove('d-none');
+async function startAnalysis() {
+  const btn = document.getElementById('btnAnalyze');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-sm me-1" role="status"></span>Analysiere…';
+  try {
+    const res  = await fetch('/api/ai/analyze', { method: 'POST' });
+    const json = await res.json();
+    if (json.status === 'ok') {
+      await loadProblems();
+      showAnalysisResult('success', `${json.count} Problem(e) identifiziert.`);
+    } else {
+      showAnalysisResult('danger', json.message || 'Unbekannter Fehler');
+    }
+  } catch(e) {
+    showAnalysisResult('danger', 'Verbindungsfehler: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-robot me-1"></i>KI-Analyse starten';
   }
+}
+
+function showAnalysisResult(type, msg) {
+  const el = document.getElementById('analysisResult');
+  el.className = `alert alert-${type} py-2 small mb-2`;
+  el.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>${escHtml(msg)}`;
+  el.classList.remove('d-none');
+  setTimeout(() => el.classList.add('d-none'), 6000);
+}
+
+async function updateProblem(id, status) {
+  await fetch(`/api/ai/problems/${id}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ status })
+  });
+  await loadProblems();
+}
+
+async function updateMeasure(id, status) {
+  await fetch(`/api/ai/measures/${id}`, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ status })
+  });
+  await loadProblems();
+}
+
+async function saveComment(type, id) {
+  const inputId = type === 'problem' ? `prob-comment-${id}` : `meas-comment-${id}`;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const url = type === 'problem' ? `/api/ai/problems/${id}` : `/api/ai/measures/${id}`;
+  await fetch(url, {
+    method: 'PATCH', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ comment: input.value.trim() })
+  });
+  await loadProblems();
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function formatTs(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleString('de-DE', {
+    day:'2-digit', month:'2-digit', year:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  });
+}
+
+const CAT_LABELS = {
+  error:'Fehler', warning:'Warnung', internet:'Internet', wifi:'WLAN',
+  phone:'Telefon', mobile:'Mobile', system:'System', security:'Sicherheit', info:'Info'
+};
+function catLabel(cat) { return CAT_LABELS[cat] ?? cat; }
+
+function showError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorAlert').classList.remove('d-none');
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 </script>
 </body>
 </html>

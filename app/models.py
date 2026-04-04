@@ -29,14 +29,27 @@ class AppConfig(Base):
     value = Column(String, nullable=True)
 
 
-class AiRecommendation(Base):
-    __tablename__ = "ai_recommendations"
+class AiProblem(Base):
+    __tablename__ = "ai_problems"
 
     id          = Column(Integer, primary_key=True, index=True)
-    run_id      = Column(Integer, index=True, nullable=False)
+    run_id      = Column(Integer, index=True, nullable=False)  # Unix-Timestamp der Analyse
     created_at  = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     title       = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    severity    = Column(String, default="info")   # info | warning | critical
+    severity    = Column(String, default="info")    # info | warning | critical
     category    = Column(String, nullable=True)
-    status      = Column(String, default="pending")  # pending | accepted | rejected
+    status      = Column(String, default="pending") # pending | rejected | success | failed
+    comment     = Column(String, nullable=True)
+
+
+class AiMeasure(Base):
+    __tablename__ = "ai_measures"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    problem_id  = Column(Integer, nullable=False, index=True)
+    created_at  = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    title       = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    status      = Column(String, default="pending") # pending | rejected | success | failed
+    comment     = Column(String, nullable=True)
