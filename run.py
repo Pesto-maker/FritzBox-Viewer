@@ -16,7 +16,6 @@ print("  +------------------------------------------+")
 print("  |          FritzBox Viewer                 |")
 print("  |                                          |")
 print("  |  Oberflaeche:  http://localhost:8000     |")
-print("  |  Admin:        http://localhost:8000/admin |")
 if debug:
     print("  |                                          |")
     print("  |  Modus: DEBUG (ausfuehrliche Ausgabe)    |")

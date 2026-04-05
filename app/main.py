@@ -1,9 +1,10 @@
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -74,6 +75,21 @@ def admin_page(request: Request):
 @app.get("/recommendations")
 def recommendations_redirect():
     return RedirectResponse(url="/")
+
+
+@app.get("/anleitung")
+def anleitung_page():
+    """Serve the bundled user guide (ANLEITUNG.html).
+
+    In frozen mode PyInstaller extracts data files to ``sys._MEIPASS``;
+    from source the file lives in the project root next to ``run.py``.
+    """
+    if getattr(sys, "frozen", False):
+        base = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    else:
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(base, "ANLEITUNG.html")
+    return FileResponse(path, media_type="text/html; charset=utf-8")
 
 
 @app.get("/problems/{problem_id}", response_class=HTMLResponse)

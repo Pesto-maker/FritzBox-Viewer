@@ -7,13 +7,21 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 def _db_path() -> str:
     """
-    Always store the database next to the executable (or project root when
-    running from source), never inside the PyInstaller temp extraction dir.
+    Pick a writable location for the SQLite database:
+      - Frozen exe: %LOCALAPPDATA%\\FritzBox-Viewer\\  (per-user, always writable;
+        the exe itself may live in C:\\Program Files\\ which is read-only).
+        Falls back to the exe directory if LOCALAPPDATA is unset (rare).
+      - Source checkout: project root (one level above this file).
     Returns a forward-slash path so it plugs cleanly into a SQLAlchemy URL
     on Windows (backslashes confuse the URL parser).
     """
     if getattr(sys, "frozen", False):
-        base = os.path.dirname(sys.executable)
+        appdata = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+        if appdata:
+            base = os.path.join(appdata, "FritzBox-Viewer")
+        else:
+            base = os.path.dirname(sys.executable)
+        os.makedirs(base, exist_ok=True)
     else:
         base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, "fritzbox_logs.db").replace("\\", "/")

@@ -150,6 +150,49 @@
     table#problemsTable tbody tr:hover { background: var(--fb-surface2) !important; }
     table#problemsTable tbody td { font-size: .82rem; vertical-align: middle; padding: .45rem .5rem; }
 
+    /* ── Resizable split layout (Log left / Problems right) ──── */
+    .split-container {
+      display: flex;
+      flex-direction: row;
+      gap: 0;
+      align-items: stretch;
+      width: 100%;
+    }
+    .split-pane { min-width: 0; }           /* allow flex children to shrink */
+    .split-pane-left  { flex: 0 0 42%; }    /* width is overridden by JS/localStorage */
+    .split-pane-right { flex: 1 1 auto; }
+    .split-divider {
+      flex: 0 0 8px;
+      cursor: col-resize;
+      background: transparent;
+      position: relative;
+      margin: 0 .25rem;
+      border-radius: 4px;
+      transition: background .15s;
+    }
+    .split-divider::before {
+      content: "";
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 3px; height: 40px;
+      background: var(--fb-border);
+      border-radius: 2px;
+      transition: background .15s;
+    }
+    .split-divider:hover,
+    .split-divider.dragging { background: rgba(79,110,247,.15); }
+    .split-divider:hover::before,
+    .split-divider.dragging::before { background: var(--fb-accent2); }
+    body.split-dragging { cursor: col-resize; user-select: none; }
+    body.split-dragging * { cursor: col-resize !important; }
+    /* Stack vertically below xl breakpoint — matches previous responsive behaviour */
+    @media (max-width: 1199.98px) {
+      .split-container { flex-direction: column; }
+      .split-pane-left,
+      .split-pane-right { flex: 1 1 auto !important; width: 100% !important; }
+      .split-divider { display: none; }
+    }
+
     /* ── System prompt modal textarea ────────────────────────── */
     #systemPromptText {
       background: var(--fb-surface2); border-color: var(--fb-border);
@@ -172,6 +215,9 @@
       <span><span class="status-dot" id="statusDot"></span><span id="statusText">Verbinde…</span></span>
       <span id="lastFetch" class="d-none">Letzter Abruf: <strong id="lastFetchTime">—</strong></span>
     </div>
+    <a href="/anleitung" target="_blank" class="btn btn-sm btn-outline-info">
+      <i class="bi bi-book me-1"></i>Anleitung
+    </a>
     <a href="/admin" class="btn btn-sm btn-outline-secondary">
       <i class="bi bi-gear me-1"></i>Admin
     </a>
@@ -208,11 +254,11 @@
     <i class="bi bi-exclamation-triangle-fill me-2"></i><span id="errorMsg"></span>
   </div>
 
-  <!-- Two-column layout -->
-  <div class="row g-3">
+  <!-- Two-column layout (resizable) -->
+  <div class="split-container" id="splitContainer">
 
     <!-- ══ LEFT: Log table ══════════════════════════════════ -->
-    <div class="col-xl-5">
+    <div class="split-pane split-pane-left" id="splitPaneLeft">
       <div class="card-main p-3">
 
         <!-- Toolbar -->
@@ -261,8 +307,12 @@
       </div>
     </div>
 
+    <!-- ══ DIVIDER ══════════════════════════════════════════ -->
+    <div class="split-divider" id="splitDivider" role="separator"
+         aria-orientation="vertical" title="Ziehen zum Anpassen der Breite"></div>
+
     <!-- ══ RIGHT: Problems & Measures ═══════════════════════ -->
-    <div class="col-xl-7">
+    <div class="split-pane split-pane-right" id="splitPaneRight">
       <div class="card-main p-3">
 
         <!-- Toolbar -->
@@ -312,7 +362,7 @@
       </div>
     </div>
 
-  </div><!-- /row -->
+  </div><!-- /split-container -->
 </main>
 
 <!-- ════════════════════════════════════════════════════ CREATE PROBLEM MODAL -->
@@ -440,6 +490,67 @@
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
+// ── Resizable split pane (Log table ↔ Problems table) ───────────────────
+(function initSplitter() {
+  const KEY = 'fbv_split_left_pct';
+  const MIN_PCT = 20;
+  const MAX_PCT = 80;
+  const container = document.getElementById('splitContainer');
+  const left      = document.getElementById('splitPaneLeft');
+  const divider   = document.getElementById('splitDivider');
+  if (!container || !left || !divider) return;
+
+  const saved = parseFloat(localStorage.getItem(KEY));
+  if (!isNaN(saved) && saved >= MIN_PCT && saved <= MAX_PCT) {
+    left.style.flex = `0 0 ${saved}%`;
+  }
+
+  let dragging = false;
+
+  divider.addEventListener('mousedown', (e) => {
+    // Only on wide screens where the split is active
+    if (window.innerWidth < 1200) return;
+    dragging = true;
+    document.body.classList.add('split-dragging');
+    divider.classList.add('dragging');
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const rect = container.getBoundingClientRect();
+    let pct = ((e.clientX - rect.left) / rect.width) * 100;
+    if (pct < MIN_PCT) pct = MIN_PCT;
+    if (pct > MAX_PCT) pct = MAX_PCT;
+    left.style.flex = `0 0 ${pct}%`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.classList.remove('split-dragging');
+    divider.classList.remove('dragging');
+    // Persist current width
+    const rect = container.getBoundingClientRect();
+    const leftRect = left.getBoundingClientRect();
+    const pct = (leftRect.width / rect.width) * 100;
+    localStorage.setItem(KEY, pct.toFixed(2));
+    // Let DataTables recalculate column widths for the new pane size
+    if (window.jQuery && jQuery.fn.dataTable && jQuery.fn.dataTable.isDataTable('#logTable')) {
+      jQuery('#logTable').DataTable().columns.adjust();
+    }
+  });
+
+  // Double-click to reset to default
+  divider.addEventListener('dblclick', () => {
+    left.style.flex = '0 0 42%';
+    localStorage.removeItem(KEY);
+    if (window.jQuery && jQuery.fn.dataTable && jQuery.fn.dataTable.isDataTable('#logTable')) {
+      jQuery('#logTable').DataTable().columns.adjust();
+    }
+  });
+})();
+
 // ── System Prompts (loaded from API) ─────────────────────────────────────
 let SYSTEM_PROMPT_LOGS = '';
 let SYSTEM_PROMPT_FULL_TEXT = '';
