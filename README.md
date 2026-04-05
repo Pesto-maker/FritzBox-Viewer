@@ -14,7 +14,42 @@ Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls eine
 - Vollständiger Export (Logs + Probleme + Maßnahmen) für manuelle KI-Analyse im Browser
 - Alle Einstellungen werden über die Admin-Oberfläche im Browser konfiguriert
 
-## Voraussetzungen
+## Deployment
+
+### Option A — Windows-Exe (empfohlen für Weitergabe)
+
+Kein Python erforderlich. Den `dist/FritzBox-Viewer/`-Ordner als ZIP weitergeben, entpacken und `FritzBox-Viewer.exe` starten.
+
+**Selbst bauen** (einmalig, Python + venv muss installiert sein):
+```
+build.bat
+```
+Ausgabe: `dist/FritzBox-Viewer/FritzBox-Viewer.exe`
+
+Die Datenbank (`fritzbox_logs.db`) wird beim ersten Start automatisch neben der Exe angelegt.
+
+### Option B — Python direkt
+
+```bash
+python run.py
+# oder mit ausführlicher Ausgabe:
+python run.py --debug
+```
+
+### Option C — Docker
+
+Voraussetzung: FritzBox per IP-Adresse erreichbar (statt `fritz.box`-Hostname).
+
+```bash
+docker build -t fritzbox-viewer .
+docker run -p 8000:8000 -v ./data:/app/data fritzbox-viewer
+```
+
+> Eine `Dockerfile` ist noch nicht enthalten — bei Bedarf ergänzen.
+
+---
+
+## Voraussetzungen (Python-Variante)
 
 - Python 3.11+
 - Zugang zur FritzBox im lokalen Netz
@@ -134,8 +169,10 @@ FritzBox-Viewer/
 │       ├── index.html         # Hauptseite (Logs + Problemtabelle)
 │       ├── problem_detail.html # Detailseite eines Problems
 │       └── admin.html         # Konfigurationsseite
-├── ANLEITUNG.html       # Ausführliche Bedienungsanleitung
-├── run.py               # Einstiegspunkt
+├── ANLEITUNG.html           # Ausführliche Bedienungsanleitung
+├── fritzbox_viewer.spec     # PyInstaller-Konfiguration
+├── build.bat                # Build-Skript für Windows-Exe
+├── run.py                   # Einstiegspunkt
 └── requirements.txt
 ```
 
