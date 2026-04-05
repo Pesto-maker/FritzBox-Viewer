@@ -18,7 +18,7 @@ from .config_store import DEFAULT_SYSTEM_PROMPT_FULL
 
 logger = logging.getLogger(__name__)
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-opus-4-6"
 MAX_LOGS = 400
 
 
