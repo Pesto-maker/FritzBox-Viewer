@@ -1,9 +1,9 @@
-import os
 import logging
 from datetime import datetime, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from . import config_store
 from .database import SessionLocal
 from .fritzbox import get_fritzbox_logs
 from .models import FetchStatus, LogEntry
@@ -53,7 +53,7 @@ def fetch_and_store_logs():
 
 
 def start_scheduler() -> BackgroundScheduler:
-    interval = int(os.getenv("FETCH_INTERVAL", "300"))
+    interval = int(config_store.get("fetch_interval") or 300)
     scheduler = BackgroundScheduler(timezone="UTC")
     scheduler.add_job(
         fetch_and_store_logs,

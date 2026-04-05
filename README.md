@@ -1,14 +1,18 @@
 # FritzBox Viewer
 
-Web-Anwendung zur Anzeige und Analyse des Ereignisprotokolls einer **FritzBox 6580 5G**.
+Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls einer **FritzBox**.
 
 ## Features
 
 - Automatischer, konfigurierbarer Abruf des FritzBox-Ereignislogs (TR-064)
 - Persistente Speicherung in SQLite (keine Duplikate)
-- Dark-Theme-Oberfläche mit sortierbarer und filterbarer Tabelle
+- Dark-Theme-Oberfläche mit sortierbarer und filterbarer Logtabelle
 - Kategorisierung der Einträge (Fehler, Warnung, Internet, WLAN, Telefon, Mobile, System, Sicherheit)
-- Statistik-Übersicht und manueller Abruf per Knopfdruck
+- KI-gestützte Analyse der Logs mit Anthropic Claude (identifiziert Probleme, schlägt Maßnahmen vor)
+- Zweistufige Problemverwaltung: Probleme → Maßnahmen mit Status-Workflow
+- Kommentarfunktion mit Markdown-Unterstützung
+- Vollständiger Export (Logs + Probleme + Maßnahmen) für manuelle KI-Analyse im Browser
+- Alle Einstellungen werden über die Admin-Oberfläche im Browser konfiguriert
 
 ## Voraussetzungen
 
@@ -40,22 +44,7 @@ source .venv/bin/activate
 
 # 3. Abhängigkeiten installieren
 pip install -r requirements.txt
-
-# 4. Konfiguration anlegen
-cp .env.example .env
 ```
-
-## Konfiguration (`.env`)
-
-```dotenv
-FRITZ_HOST=fritz.box          # IP oder Hostname der FritzBox
-FRITZ_USER=                   # Benutzername (leer = Standard-Benutzer)
-FRITZ_PASSWORD=your_password  # FritzBox-Passwort
-FETCH_INTERVAL=300            # Abrufintervall in Sekunden (Standard: 5 min)
-```
-
-> **Hinweis:** Wenn an der FritzBox kein separater Benutzer eingerichtet ist,
-> kann `FRITZ_USER` leer bleiben. Das Passwort ist dann das FritzBox-Zugangskennwort.
 
 ## Starten
 
@@ -65,17 +54,23 @@ python run.py
 
 Die Anwendung ist danach unter **http://localhost:8000** erreichbar.
 
-Beim ersten Start wird:
-1. Die SQLite-Datenbank `fritzbox_logs.db` im aktuellen Verzeichnis angelegt.
-2. Sofort ein erster Log-Abruf gestartet.
-3. Der Scheduler aktiviert (Intervall laut `FETCH_INTERVAL`).
+Optional: `python run.py --debug` für ausführliche Log-Ausgaben.
+
+## Erstkonfiguration
+
+Beim ersten Start wird die SQLite-Datenbank angelegt. Anschließend unter **http://localhost:8000/admin** die Verbindungsdaten zur FritzBox eintragen:
+
+- **Host / IP-Adresse** der FritzBox (Standard: `fritz.box`)
+- **Benutzername** und **Passwort**
+- **Abrufintervall** in Sekunden
+
+Für die KI-Analyse zusätzlich den **Anthropic API-Key** hinterlegen (erhältlich unter [console.anthropic.com](https://console.anthropic.com)).
+
+Alle Einstellungen werden in der lokalen SQLite-Datenbank gespeichert — keine Konfigurationsdateien erforderlich.
 
 ## Testen ohne echte FritzBox
 
-Zum Testen der Oberfläche ohne FritzBox kann die API mit Demo-Daten befüllt werden:
-
 ```bash
-# In einem separaten Terminal (venv aktiv):
 python tests/insert_demo_data.py
 ```
 
@@ -84,36 +79,36 @@ python tests/insert_demo_data.py
 ```
 FritzBox-Viewer/
 ├── app/
-│   ├── main.py          # FastAPI-App
-│   ├── database.py      # SQLAlchemy-Setup (SQLite)
+│   ├── main.py          # FastAPI-App + API-Endpunkte
+│   ├── database.py      # SQLAlchemy-Setup (SQLite) + Migrationen
 │   ├── models.py        # Datenbankmodelle
+│   ├── config_store.py  # DB-backed Konfigurationsspeicher
 │   ├── fritzbox.py      # FritzBox-Anbindung (TR-064)
 │   ├── scheduler.py     # Hintergrund-Scheduler (APScheduler)
+│   ├── ai_analyzer.py   # KI-Analyse mit Anthropic Claude
 │   └── templates/
-│       └── index.html   # Frontend (Bootstrap 5 Dark + DataTables)
-├── infrastructure/
-│   └── synology/        # K3s-Deployment auf Synology NAS
+│       ├── index.html         # Hauptseite (Logs + Problemtabelle)
+│       ├── problem_detail.html # Detailseite eines Problems
+│       └── admin.html         # Konfigurationsseite
+├── ANLEITUNG.html       # Ausführliche Bedienungsanleitung
 ├── run.py               # Einstiegspunkt
-├── requirements.txt
-└── .env.example
+└── requirements.txt
 ```
 
-## API-Endpunkte
+## API-Endpunkte (Auswahl)
 
-| Methode | Pfad          | Beschreibung                         |
-|---------|---------------|--------------------------------------|
-| GET     | `/`           | Web-Oberfläche                       |
-| GET     | `/api/logs`   | Log-Einträge (JSON, filterbar)       |
-| GET     | `/api/stats`  | Statistiken und Fetch-Status         |
-| POST    | `/api/fetch`  | Manuellen Abruf auslösen            |
-
-### `/api/logs` Parameter
-
-| Parameter  | Typ    | Standard | Beschreibung                        |
-|------------|--------|----------|-------------------------------------|
-| `limit`    | int    | 500      | Max. Anzahl Einträge                |
-| `offset`   | int    | 0        | Paginierung                         |
-| `category` | string | —        | Filter nach Kategorie               |
-| `search`   | string | —        | Volltextsuche in der Nachricht      |
-| `sort_by`  | string | timestamp| Sortierfeld                         |
-| `sort_dir` | string | desc     | `asc` oder `desc`                   |
+| Methode | Pfad                         | Beschreibung                              |
+|---------|------------------------------|-------------------------------------------|
+| GET     | `/`                          | Hauptseite                                |
+| GET     | `/admin`                     | Konfigurationsseite                       |
+| GET     | `/problems/{id}`             | Detailseite eines Problems                |
+| GET     | `/api/logs`                  | Log-Einträge (JSON, filterbar)            |
+| GET     | `/api/stats`                 | Statistiken und Fetch-Status              |
+| POST    | `/api/fetch`                 | Manuellen Log-Abruf auslösen             |
+| POST    | `/api/ai/analyze`            | KI-Analyse starten                        |
+| GET     | `/api/ai/problems`           | Alle Probleme mit Maßnahmen              |
+| PATCH   | `/api/ai/problems/{id}`      | Problem-Status / Kommentar setzen         |
+| PATCH   | `/api/ai/measures/{id}`      | Maßnahmen-Status / Kommentar setzen       |
+| GET     | `/api/export/logs`           | Log-Export als Textdatei                  |
+| GET     | `/api/export/full`           | Vollexport (Logs + Probleme + Maßnahmen)  |
+| POST    | `/api/admin/config`          | Konfiguration speichern                   |

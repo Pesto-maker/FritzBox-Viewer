@@ -2,10 +2,6 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
