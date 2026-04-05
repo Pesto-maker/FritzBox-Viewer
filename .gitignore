@@ -31,6 +31,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!fritzbox_viewer.spec
 
 # Installer logs
 pip-log.txt
@@ -209,3 +210,7 @@ __marimo__/
 # FritzBox Viewer
 *.db
 .claude/
+
+# PyInstaller build output
+build/
+dist/

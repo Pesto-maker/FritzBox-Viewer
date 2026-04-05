@@ -1,7 +1,23 @@
+import os
+import sys
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./fritzbox_logs.db"
+
+def _db_path() -> str:
+    """
+    Always store the database next to the executable (or project root when
+    running from source), never inside the PyInstaller temp extraction dir.
+    """
+    if getattr(sys, "frozen", False):
+        base = os.path.dirname(sys.executable)
+    else:
+        base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, "fritzbox_logs.db")
+
+
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{_db_path()}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
