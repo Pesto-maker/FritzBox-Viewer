@@ -1,6 +1,6 @@
 # FritzBox Viewer
 
-Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls einer **FritzBox**.
+Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls einer **FritzBox** (kompatibel mit allen Modellen, die TR-064 unterstützen).
 
 ## Features
 
@@ -67,6 +67,41 @@ Beim ersten Start wird die SQLite-Datenbank angelegt. Anschließend unter **http
 Für die KI-Analyse zusätzlich den **Anthropic API-Key** hinterlegen (erhältlich unter [console.anthropic.com](https://console.anthropic.com)).
 
 Alle Einstellungen werden in der lokalen SQLite-Datenbank gespeichert — keine Konfigurationsdateien erforderlich.
+
+## Analysevarianten
+
+Der FritzBox Viewer unterstützt drei Wege, um aus den Logs Probleme und Maßnahmen zu erarbeiten. Die Varianten lassen sich auch kombinieren.
+
+### 1. Export + manuelle KI-Analyse (kein API-Key erforderlich)
+
+Die gesammelten Logs sowie alle bereits erfassten Probleme und Maßnahmen lassen sich als strukturierte Textdatei exportieren. Diese Datei kann in einen beliebigen KI-Chat (z. B. Claude.ai, ChatGPT) hochgeladen werden.
+
+- **Logs exportieren** — enthält nur die Rohlogs; geeignet für eine Erstanalyse
+- **Vollständig exportieren** — enthält Logs, Probleme, Maßnahmen und deren Status; ideal für Folgeanalysen, da die KI bereits bearbeitete Themen berücksichtigen kann
+
+Jeder Export-Button zeigt auf Wunsch den passenden **Systemprompt** an, der der KI erklärt, wie sie die Daten interpretieren und in welchem Format sie antworten soll. KI-Antworten können anschließend per **"KI-Import"** direkt in den Viewer übernommen werden.
+
+### 2. Direkte KI-Analyse über Anthropic API
+
+Mit einem Anthropic API-Key wird die Analyse vollständig im Viewer durchgeführt — kein manueller Export nötig.
+
+- API-Key unter **Admin → KI-Einstellungen** hinterlegen
+- Auf der Hauptseite **"KI-Analyse starten"** klicken
+- Probleme und Maßnahmen erscheinen automatisch in der Tabelle
+
+Der Systemprompt ist über die Admin-Seite anpassbar. Folgeanalysen berücksichtigen automatisch bereits bearbeitete, abgelehnte oder erfolgreich umgesetzte Probleme.
+
+### 3. Manuelle Erfassung
+
+Probleme und Maßnahmen können vollständig ohne KI-Beteiligung erfasst werden.
+
+- In der Problemtabelle auf **"Neu"** klicken
+- Titel, Beschreibung, Schweregrad und Kategorie eingeben
+- Maßnahmen direkt auf der Detailseite des Problems ergänzen
+
+Dies ist nützlich, wenn Auffälligkeiten beim Durchsehen der Logs manuell festgestellt werden oder wenn keine KI-Anbindung gewünscht ist.
+
+---
 
 ## Testen ohne echte FritzBox
 
