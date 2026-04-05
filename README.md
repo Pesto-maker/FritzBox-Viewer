@@ -4,7 +4,7 @@ Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls eine
 
 ## Features
 
-- Automatischer, konfigurierbarer Abruf des FritzBox-Ereignislogs (TR-064)
+- Automatischer, konfigurierbarer Abruf des FritzBox-Ereignislogs (TR-064 + HTTPS-API)
 - Persistente Speicherung in SQLite (keine Duplikate)
 - Dark-Theme-Oberfläche mit sortierbarer und filterbarer Logtabelle
 - Kategorisierung der Einträge (Fehler, Warnung, Internet, WLAN, Telefon, Mobile, System, Sicherheit)
@@ -20,7 +20,16 @@ Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls eine
 - Zugang zur FritzBox im lokalen Netz
 - FritzBox-Benutzer mit Berechtigung für das Heimnetz (TR-064 muss aktiv sein)
 
-## TR-064 auf der FritzBox aktivieren
+## Verbindung zur FritzBox
+
+Der Log-Abruf läuft in zwei Schritten:
+
+1. **Authentifizierung via TR-064** — der Viewer ruft über das TR-064-Protokoll eine Session-ID (SID) ab; dazu muss TR-064 auf der FritzBox aktiv sein
+2. **Log-Abruf via HTTPS-API** — mit der SID werden die Ereignisprotokolleinträge über `https://fritz.box/api/v0/dino/eventlog` abgerufen
+
+Als Fallback wird auch `GetDeviceLog` direkt per TR-064 unterstützt (erfordert die Berechtigung "Fritz!Box-Einstellungen" für den FritzBox-Benutzer).
+
+### TR-064 aktivieren
 
 1. FritzBox-Oberfläche öffnen: `http://fritz.box`
 2. **Heimnetz → Netzwerk → Heimnetzfreigaben**
