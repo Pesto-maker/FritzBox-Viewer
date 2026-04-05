@@ -56,6 +56,10 @@ templates = Jinja2Templates(directory=_templates_dir)
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    # First-run: redirect to the Admin page so the user can enter FritzBox
+    # credentials before the app tries to fetch anything.
+    if not cfg.get("fritz_password"):
+        return RedirectResponse(url="/admin", status_code=303)
     return templates.TemplateResponse("index.html", {"request": request})
 
 

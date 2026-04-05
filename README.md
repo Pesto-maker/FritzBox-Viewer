@@ -102,7 +102,7 @@ Optional: `python run.py --debug` für ausführliche Log-Ausgaben.
 
 ## Erstkonfiguration
 
-Beim ersten Start wird die SQLite-Datenbank angelegt. Anschließend unter **http://localhost:8000/admin** die Verbindungsdaten zur FritzBox eintragen:
+Beim ersten Start öffnet die App automatisch die **Admin-Seite** der Anwendung (zu erreichen über die Navigation oder direkt unter `http://localhost:8000/admin`). Dort bitte die Verbindungsdaten zur FritzBox eintragen:
 
 - **Host / IP-Adresse** der FritzBox (Standard: `fritz.box`)
 - **Benutzername** und **Passwort**
@@ -110,7 +110,7 @@ Beim ersten Start wird die SQLite-Datenbank angelegt. Anschließend unter **http
 
 Für die KI-Analyse zusätzlich den **Anthropic API-Key** hinterlegen (erhältlich unter [console.anthropic.com](https://console.anthropic.com)).
 
-Alle Einstellungen werden in der lokalen SQLite-Datenbank gespeichert — keine Konfigurationsdateien erforderlich.
+Alle Einstellungen werden in der lokalen SQLite-Datenbank gespeichert — keine Konfigurationsdateien erforderlich. Solange keine Zugangsdaten hinterlegt sind, wird der FritzBox-Abruf automatisch pausiert.
 
 ## Analysevarianten
 
