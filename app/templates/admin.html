@@ -227,7 +227,7 @@
     </div>
 
     <form id="aiConfigForm" onsubmit="saveAiConfig(event)">
-      <div class="col-12">
+      <div class="col-12 mb-3">
         <label class="form-label" for="anthropic_api_key">Anthropic API-Key</label>
         <div class="input-group">
           <span class="input-group-text"><i class="bi bi-key"></i></span>
@@ -248,7 +248,37 @@
         </div>
       </div>
 
-      <div class="d-flex align-items-center gap-3 mt-4">
+      <div class="col-12 mb-3">
+        <label class="form-label" for="system_prompt_logs">
+          Systemprompt — Logs-Export
+          <button type="button" class="btn btn-link btn-sm p-0 ms-2"
+                  style="font-size:.75rem;color:var(--fb-muted);text-transform:none;letter-spacing:0"
+                  onclick="resetPrompt('system_prompt_logs')">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Standard
+          </button>
+        </label>
+        <textarea id="system_prompt_logs" name="system_prompt_logs"
+                  class="form-control font-monospace" rows="10"
+                  style="font-size:.78rem;resize:vertical">{{ config.system_prompt_logs }}</textarea>
+        <div class="form-text">Wird angezeigt wenn nur Logs exportiert werden (ohne Probleme/Maßnahmen).</div>
+      </div>
+
+      <div class="col-12 mb-3">
+        <label class="form-label" for="system_prompt_full">
+          Systemprompt — Vollexport
+          <button type="button" class="btn btn-link btn-sm p-0 ms-2"
+                  style="font-size:.75rem;color:var(--fb-muted);text-transform:none;letter-spacing:0"
+                  onclick="resetPrompt('system_prompt_full')">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Standard
+          </button>
+        </label>
+        <textarea id="system_prompt_full" name="system_prompt_full"
+                  class="form-control font-monospace" rows="16"
+                  style="font-size:.78rem;resize:vertical">{{ config.system_prompt_full }}</textarea>
+        <div class="form-text">Wird angezeigt wenn Logs + Probleme/Maßnahmen exportiert werden. Enthält das JSON-Rückgabeformat.</div>
+      </div>
+
+      <div class="d-flex align-items-center gap-3 mt-2">
         <button type="submit" class="btn btn-primary" id="btnSaveAiConfig">
           <i class="bi bi-floppy me-1"></i>Speichern
         </button>
@@ -313,17 +343,15 @@
   // ── Save AI config ────────────────────────────────────────────────
   async function saveAiConfig(event) {
     event.preventDefault();
-    const btn    = document.getElementById("btnSaveAiConfig");
+    const btn      = document.getElementById("btnSaveAiConfig");
     const keyField = document.getElementById("anthropic_api_key");
-    const payload = {};
+    const payload  = {
+      system_prompt_logs: document.getElementById("system_prompt_logs").value,
+      system_prompt_full: document.getElementById("system_prompt_full").value,
+    };
 
     if (keyField.dataset.changed === "true") {
       payload.anthropic_api_key = keyField.value;
-    }
-
-    if (!Object.keys(payload).length) {
-      showResult("aiConfigResult", "info", '<i class="bi bi-info-circle me-2"></i>Keine Änderungen.');
-      return;
     }
 
     btn.disabled = true;
@@ -339,7 +367,7 @@
       const data = await r.json();
       if (data.status === "ok") {
         showResult("aiConfigResult", "success",
-          '<i class="bi bi-check-circle me-2"></i>API-Key gespeichert.');
+          '<i class="bi bi-check-circle me-2"></i>Einstellungen gespeichert.');
         keyField.dataset.changed = "false";
       } else {
         showResult("aiConfigResult", "danger",
@@ -351,6 +379,14 @@
       btn.disabled = false;
       btn.innerHTML = '<i class="bi bi-floppy me-1"></i>Speichern';
     }
+  }
+
+  // ── Reset prompt to server default ───────────────────────────────
+  async function resetPrompt(key) {
+    if (!confirm('Systemprompt auf Standard zurücksetzen?')) return;
+    const r    = await fetch('/api/ai/system-prompts/default');
+    const data = await r.json();
+    if (data[key]) document.getElementById(key).value = data[key];
   }
 
   // ── Helper ────────────────────────────────────────────────────────

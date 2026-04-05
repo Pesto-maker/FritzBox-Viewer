@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from datetime import datetime, timezone
 from .database import Base
 
@@ -61,3 +61,4 @@ class AiComment(Base):
     parent_id   = Column(Integer, nullable=False, index=True)
     created_at  = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     text        = Column(String, nullable=False)
+    is_new      = Column(Boolean, default=False)   # True = KI-generiert, noch nicht gelesen

@@ -14,6 +14,7 @@ import anthropic
 
 from . import config_store
 from .models import AiProblem, AiMeasure, AiComment, LogEntry
+from .config_store import DEFAULT_SYSTEM_PROMPT_FULL
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +91,22 @@ def run_analysis(db) -> list[dict]:
         db.add(p)
         db.flush()  # p.id is now available
         for m in prob.get("measures", []):
-            db.add(AiMeasure(
+            mobj = AiMeasure(
                 problem_id=p.id,
                 title=m["title"],
                 description=m["description"],
                 status="pending",
-            ))
+            )
+            db.add(mobj)
+            db.flush()
+            ai_c = (m.get("ai_comment") or "").strip()
+            if ai_c:
+                db.add(AiComment(parent_type="measure", parent_id=mobj.id,
+                                 text=ai_c, is_new=True))
+        ai_c = (prob.get("ai_comment") or "").strip()
+        if ai_c:
+            db.add(AiComment(parent_type="problem", parent_id=p.id,
+                             text=ai_c, is_new=True))
     db.commit()
     logger.info(
         "AI-Analyse: %d neue Probleme gespeichert (run_id=%d).",
@@ -144,50 +155,28 @@ def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict,
             return out
 
         if success:
-            prev_section += "\n**Erfolgreich umgesetzt — nicht erneut empfehlen:**\n"
+            prev_section += "\n**Erfolgreich umgesetzt — keine neuen Maßnahmen, ai_comment möglich:**\n"
             prev_section += "\n".join(fmt_problem(p) for p in success) + "\n"
 
         if failed:
-            prev_section += "\n**Umgesetzt aber nicht erfolgreich — alternative Maßnahmen vorschlagen:**\n"
+            prev_section += "\n**Umgesetzt aber nicht erfolgreich / in Prüfung — alternative Maßnahmen vorschlagen:**\n"
             prev_section += "\n".join(fmt_problem(p) for p in failed) + "\n"
 
         if rejected:
-            prev_section += "\n**Abgelehnt — nur bei kritischem Sicherheitsrisiko erneut empfehlen:**\n"
+            prev_section += "\n**Abgelehnt — keine neuen Maßnahmen außer bei kritischem Risiko, ai_comment möglich:**\n"
             prev_section += "\n".join(fmt_problem(p) for p in rejected) + "\n"
 
         if pending:
-            prev_section += "\n**Noch offen:**\n"
+            prev_section += "\n**Noch offen — neue Maßnahmen erwünscht:**\n"
             prev_section += "\n".join(fmt_problem(p) for p in pending) + "\n"
 
-    return f"""Du bist ein Netzwerk- und Sicherheitsexperte und analysierst FritzBox-Ereignisprotokolle für einen Heimnetzwerk-Betreiber.
+    # Use configurable prompt from DB/config, fall back to default
+    system_prompt = config_store.get("system_prompt_full") or DEFAULT_SYSTEM_PROMPT_FULL
 
-## Aufgabe
-Analysiere die Logeinträge und erstelle konkrete, umsetzbare Empfehlungen.
-Fokussiere dich auf tatsächliche Auffälligkeiten — keine generischen Sicherheitstipps.{prev_section}
+    return f"""{system_prompt}{prev_section}
 
 ## Logeinträge ({len(logs)} Einträge, chronologisch)
 {log_lines}
-
-## Antwortformat
-Antworte AUSSCHLIESSLICH mit einem JSON-Array, ohne Markdown-Blöcke oder sonstige Erklärungen:
-[
-  {{
-    "title": "Kurzer prägnanter Titel des Problems (max. 80 Zeichen)",
-    "description": "Detaillierte Beschreibung des identifizierten Problems.",
-    "severity": "info|warning|critical",
-    "category": "internet|wifi|phone|security|system|mobile|info",
-    "measures": [
-      {{
-        "title": "Maßnahme 1 (max. 80 Zeichen)",
-        "description": "Konkrete Umsetzungsschritte für den Betreiber."
-      }},
-      {{
-        "title": "Maßnahme 2 (max. 80 Zeichen)",
-        "description": "Alternative oder ergänzende Maßnahme."
-      }}
-    ]
-  }}
-]
 
 Erstelle 3–7 priorisierte Probleme (critical zuerst), jeweils mit 1–3 Maßnahmen.
 Wenn keine relevanten Auffälligkeiten vorhanden sind, gib ein leeres Array zurück."""
@@ -215,7 +204,7 @@ def _parse_response(raw: str) -> list[dict]:
         if not required.issubset(item.keys()):
             logger.warning("Problem übersprungen (fehlende Felder): %r", item)
             continue
-        # Validate measures list
+        # Validate measures list (preserve ai_comment if present)
         measures = []
         for m in item.get("measures", []):
             if isinstance(m, dict) and "title" in m and "description" in m:
@@ -223,6 +212,7 @@ def _parse_response(raw: str) -> list[dict]:
             else:
                 logger.warning("Maßnahme übersprungen (fehlende Felder): %r", m)
         item["measures"] = measures
+        # Keep top-level ai_comment as-is (may be None/absent)
         valid.append(item)
 
     return valid

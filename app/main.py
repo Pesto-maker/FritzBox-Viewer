@@ -161,7 +161,8 @@ def api_trigger_fetch():
 
 @app.post("/api/admin/config")
 def api_save_config(data: dict):
-    allowed = {"fritz_host", "fritz_user", "fritz_password", "fetch_interval", "anthropic_api_key"}
+    allowed = {"fritz_host", "fritz_user", "fritz_password", "fetch_interval",
+               "anthropic_api_key", "system_prompt_logs", "system_prompt_full"}
     for key, value in data.items():
         if key in allowed:
             if key in ("fritz_password", "anthropic_api_key") and set(value) == {"•"}:
@@ -345,6 +346,30 @@ def api_export_full(db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
+# System Prompts API
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/ai/system-prompts")
+def api_get_system_prompts():
+    """Return the currently configured system prompts."""
+    return {
+        "logs": cfg.get("system_prompt_logs"),
+        "full": cfg.get("system_prompt_full"),
+    }
+
+
+@app.get("/api/ai/system-prompts/default")
+def api_get_default_system_prompts():
+    """Return the built-in default system prompts (for reset button)."""
+    from . import config_store as _cs
+    return {
+        "system_prompt_logs": _cs.DEFAULT_SYSTEM_PROMPT_LOGS,
+        "system_prompt_full": _cs.DEFAULT_SYSTEM_PROMPT_FULL,
+    }
+
+
+# ---------------------------------------------------------------------------
 # AI Analysis API
 # ---------------------------------------------------------------------------
 
@@ -375,12 +400,22 @@ def api_ai_import(data: dict, db: Session = Depends(get_db)):
         db.flush()
         for m in prob.get("measures", []):
             if isinstance(m, dict) and "title" in m and "description" in m:
-                db.add(AiMeasure(
+                mobj = AiMeasure(
                     problem_id=p.id,
                     title=m["title"],
                     description=m["description"],
                     status="pending",
-                ))
+                )
+                db.add(mobj)
+                db.flush()
+                ai_c = (m.get("ai_comment") or "").strip()
+                if ai_c:
+                    db.add(AiComment(parent_type="measure", parent_id=mobj.id,
+                                     text=ai_c, is_new=True))
+        ai_c = (prob.get("ai_comment") or "").strip()
+        if ai_c:
+            db.add(AiComment(parent_type="problem", parent_id=p.id,
+                             text=ai_c, is_new=True))
         count += 1
     db.commit()
     return {"status": "ok", "count": count}
@@ -442,7 +477,8 @@ def api_get_problems(db: Session = Depends(get_db)):
 
     def serialise_comments(parent_type, parent_id):
         return [
-            {"id": c.id, "text": c.text, "created_at": c.created_at.isoformat()}
+            {"id": c.id, "text": c.text, "created_at": c.created_at.isoformat(),
+             "is_new": bool(c.is_new)}
             for c in comments_by_parent.get((parent_type, parent_id), [])
         ]
 
@@ -486,7 +522,8 @@ def api_get_problem(problem_id: int, db: Session = Depends(get_db)):
 
     def serialise_comments(parent_type, parent_id):
         return [
-            {"id": c.id, "text": c.text, "created_at": c.created_at.isoformat()}
+            {"id": c.id, "text": c.text, "created_at": c.created_at.isoformat(),
+             "is_new": bool(c.is_new)}
             for c in comments_by_parent.get((parent_type, parent_id), [])
         ]
 
@@ -573,6 +610,17 @@ def api_delete_comment(comment_id: int, db: Session = Depends(get_db)):
     if not c:
         return {"status": "error", "message": "Nicht gefunden"}
     db.delete(c)
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.patch("/api/ai/comments/{comment_id}/read")
+def api_mark_comment_read(comment_id: int, db: Session = Depends(get_db)):
+    """Mark a KI-generated comment as read (clears is_new flag)."""
+    c = db.query(AiComment).filter(AiComment.id == comment_id).first()
+    if not c:
+        return {"status": "error", "message": "Nicht gefunden"}
+    c.is_new = False
     db.commit()
     return {"status": "ok"}
 

@@ -212,7 +212,7 @@
   <div class="row g-3">
 
     <!-- ══ LEFT: Log table ══════════════════════════════════ -->
-    <div class="col-xl-7">
+    <div class="col-xl-5">
       <div class="card-main p-3">
 
         <!-- Toolbar -->
@@ -262,7 +262,7 @@
     </div>
 
     <!-- ══ RIGHT: Problems & Measures ═══════════════════════ -->
-    <div class="col-xl-5">
+    <div class="col-xl-7">
       <div class="card-main p-3">
 
         <!-- Toolbar -->
@@ -288,7 +288,20 @@
         <!-- Analysis result alert -->
         <div id="analysisResult" class="d-none alert py-2 small mb-2"></div>
 
-        <!-- Problems (forum format) -->
+        <!-- Filter bar -->
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+          <div class="d-flex gap-1">
+            <button class="btn btn-sm btn-secondary active" id="pfAll"    onclick="setProbFilter('all')">Alle</button>
+            <button class="btn btn-sm btn-outline-primary"  id="pfOpen"   onclick="setProbFilter('open')">Offen</button>
+            <button class="btn btn-sm btn-outline-warning"  id="pfCheck"  onclick="setProbFilter('check')" style="color:#fbbf24;border-color:#fbbf24">In Prüfung</button>
+          </div>
+          <input type="text" id="probSearch" placeholder="Suche…"
+                 class="form-control form-control-sm ms-auto"
+                 style="max-width:200px;background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text);font-size:.8rem"
+                 oninput="renderProblemsTable(cachedProblems)" />
+        </div>
+
+        <!-- Problems table -->
         <div id="problemsContainer">
           <div class="text-center py-4" style="color:var(--fb-muted)">
             <i class="bi bi-robot" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
@@ -427,57 +440,24 @@
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-// ── System Prompts ────────────────────────────────────────────────────────
-const SYSTEM_PROMPT_LOGS = `Du bist ein Netzwerk- und Sicherheitsexperte für Heimnetzwerke.
+// ── System Prompts (loaded from API) ─────────────────────────────────────
+let SYSTEM_PROMPT_LOGS = '';
+let SYSTEM_PROMPT_FULL_TEXT = '';
 
-Ich lade dir nachfolgend einen Export der FritzBox-Ereignisprotokolle hoch.
-Der Export enthält Logeinträge mit Zeitstempel und Kategorie.
-
-Bitte analysiere die Daten und:
-1. Identifiziere Auffälligkeiten, Fehler und mögliche Sicherheitsrisiken.
-2. Priorisiere deine Empfehlungen (kritisch zuerst).
-3. Gib für jedes identifizierte Problem 1–3 konkrete, umsetzbare Maßnahmen an.
-4. Beschränke dich auf tatsächliche Auffälligkeiten — keine generischen Sicherheitstipps.`;
-
-const SYSTEM_PROMPT_FULL = `Du bist ein Netzwerk- und Sicherheitsexperte für Heimnetzwerke.
-
-Ich lade dir nachfolgend einen vollständigen Export aus dem FritzBox Viewer hoch.
-Der Export enthält:
-- FritzBox-Ereignisprotokolle mit Zeitstempel und Kategorie
-- Identifizierte Probleme mit ihrem aktuellen Bearbeitungsstatus
-- Zugehörige Maßnahmen mit Status (offen / abgelehnt / erfolgreich / nicht erfolgreich) und Kommentaren des Betreibers
-
-Bitte analysiere die Daten und:
-1. Beachte Probleme und Maßnahmen mit Status "erfolgreich" — diese nicht erneut empfehlen.
-2. Bei Maßnahmen mit Status "nicht erfolgreich": Schlage alternative Maßnahmen vor und berücksichtige den Kommentar des Betreibers.
-3. Bei abgelehnten Maßnahmen: Respektiere die Entscheidung, sofern kein kritisches Sicherheitsrisiko vorliegt.
-4. Identifiziere neue Auffälligkeiten in den Logs, die noch nicht als Problem erfasst sind.
-5. Priorisiere deine Empfehlungen (kritisch zuerst).
-6. Gib für jedes Problem 1–3 konkrete, umsetzbare Maßnahmen an.
-
-WICHTIG — Ausgabeformat:
-Antworte ausschließlich mit einem JSON-Array ohne Markdown-Blöcke oder Erklärungen,
-damit deine Antwort direkt in den FritzBox Viewer importiert werden kann:
-[
-  {
-    "title": "Kurzer Problemtitel (max. 80 Zeichen)",
-    "description": "Detaillierte Problembeschreibung.",
-    "severity": "critical",
-    "category": "security",
-    "measures": [
-      {
-        "title": "Maßnahme 1 (max. 80 Zeichen)",
-        "description": "Konkrete Umsetzungsschritte."
-      },
-      {
-        "title": "Maßnahme 2 (max. 80 Zeichen)",
-        "description": "Alternative oder ergänzende Maßnahme."
-      }
-    ]
+async function loadSystemPrompts() {
+  try {
+    const res  = await fetch('/api/ai/system-prompts');
+    const data = await res.json();
+    SYSTEM_PROMPT_LOGS      = data.logs || '';
+    SYSTEM_PROMPT_FULL_TEXT = data.full || '';
+  } catch(e) {
+    console.warn('Systemprompts konnten nicht geladen werden:', e);
   }
-]
-Erlaubte severity-Werte: critical | warning | info
-Erlaubte category-Werte: internet | wifi | phone | security | system | mobile | info`;
+}
+
+// Legacy alias used by openSystemPromptModal
+const getPrompt = (type) => type === 'full' ? SYSTEM_PROMPT_FULL_TEXT : SYSTEM_PROMPT_LOGS;
+
 
 async function downloadFullExport() {
   // Trigger download, then show system prompt modal
@@ -548,8 +528,7 @@ async function importAnalysis() {
 }
 
 function openSystemPromptModal(type) {
-  document.getElementById('systemPromptText').value =
-    type === 'full' ? SYSTEM_PROMPT_FULL : SYSTEM_PROMPT_LOGS;
+  document.getElementById('systemPromptText').value = getPrompt(type);
   const btn = document.getElementById('copyPromptBtn');
   btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Kopieren';
   new bootstrap.Modal(document.getElementById('systemPromptModal')).show();
@@ -595,6 +574,7 @@ $(document).ready(function () {
   loadStats();
   loadLogs();
   loadProblems();
+  loadSystemPrompts();
 
   setInterval(() => { loadStats(); loadLogs(); }, 60000);
 
@@ -677,15 +657,42 @@ async function triggerFetch() {
 }
 
 // ── Problems ───────────────────────────────────────────────────────────────
+let cachedProblems = [];
+let probFilter = 'all';
+let probSortCol = 'date';
+let probSortDir = 'desc';
+
 async function loadProblems() {
   try {
     const res  = await fetch('/api/ai/problems');
-    const data = await res.json();
-    renderProblemsTable(data);
+    cachedProblems = await res.json();
+    renderProblemsTable(cachedProblems);
   } catch(e) {
     document.getElementById('problemsContainer').innerHTML =
       `<div class="text-danger small py-2"><i class="bi bi-exclamation-triangle me-1"></i>Fehler: ${escHtml(e.message)}</div>`;
   }
+}
+
+function setProbFilter(f) {
+  probFilter = f;
+  ['pfAll','pfOpen','pfCheck'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active','btn-secondary','btn-outline-primary','btn-outline-warning'); }
+  });
+  const map = { all:'pfAll', open:'pfOpen', check:'pfCheck' };
+  const activeEl = document.getElementById(map[f]);
+  if (activeEl) {
+    if (f === 'all')   { activeEl.classList.add('active','btn-secondary'); }
+    if (f === 'open')  { activeEl.classList.add('active','btn-outline-primary'); }
+    if (f === 'check') { activeEl.classList.add('active','btn-outline-warning'); }
+  }
+  renderProblemsTable(cachedProblems);
+}
+
+function probSortBy(col) {
+  if (probSortCol === col) probSortDir = probSortDir === 'asc' ? 'desc' : 'asc';
+  else { probSortCol = col; probSortDir = col === 'date' ? 'desc' : 'asc'; }
+  renderProblemsTable(cachedProblems);
 }
 
 const STATUS_CFG = {
@@ -714,7 +721,19 @@ const LEFT_BORDER = {
 
 function renderProblemsTable(problems) {
   const container = document.getElementById('problemsContainer');
-  if (!problems.length) {
+
+  // Apply status filter
+  let filtered = problems;
+  if (probFilter === 'open')  filtered = problems.filter(p => p.status === 'pending');
+  if (probFilter === 'check') filtered = problems.filter(p => p.status === 'check');
+
+  // Apply text search
+  const q = (document.getElementById('probSearch')?.value || '').toLowerCase().trim();
+  if (q) filtered = filtered.filter(p =>
+    p.title.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+  );
+
+  if (!filtered.length && !problems.length) {
     container.innerHTML = `
       <div class="text-center py-4" style="color:var(--fb-muted)">
         <i class="bi bi-robot" style="font-size:2rem;display:block;margin-bottom:.5rem"></i>
@@ -724,8 +743,36 @@ function renderProblemsTable(problems) {
     return;
   }
 
-  // Sort by created_at desc (server returns run_id desc but let's be explicit)
-  const sorted = [...problems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!filtered.length) {
+    container.innerHTML = `<div class="text-center py-3" style="color:var(--fb-muted);font-size:.85rem">Keine Einträge für diesen Filter.</div>`;
+    return;
+  }
+
+  // Apply sort
+  const sorted = [...filtered].sort((a, b) => {
+    let va, vb;
+    if (probSortCol === 'severity') {
+      const order = {critical:0, warning:1, info:2};
+      va = order[a.severity] ?? 3; vb = order[b.severity] ?? 3;
+    } else if (probSortCol === 'status') {
+      va = a.status; vb = b.status;
+    } else if (probSortCol === 'measures') {
+      va = a.measures.filter(m => m.status === 'pending' || m.status === 'check').length;
+      vb = b.measures.filter(m => m.status === 'pending' || m.status === 'check').length;
+    } else { // date
+      va = new Date(a.created_at); vb = new Date(b.created_at);
+    }
+    if (va < vb) return probSortDir === 'asc' ? -1 : 1;
+    if (va > vb) return probSortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const sortIcon = (col) => {
+    if (probSortCol !== col) return '<i class="bi bi-arrow-down-up ms-1" style="opacity:.3;font-size:.65rem"></i>';
+    return probSortDir === 'asc'
+      ? '<i class="bi bi-arrow-up ms-1" style="color:var(--fb-accent2);font-size:.65rem"></i>'
+      : '<i class="bi bi-arrow-down ms-1" style="color:var(--fb-accent2);font-size:.65rem"></i>';
+  };
 
   let rows = '';
   for (const p of sorted) {
@@ -745,13 +792,20 @@ function renderProblemsTable(problems) {
       {day:'2-digit', month:'2-digit', year:'2-digit'});
     const border = LEFT_BORDER[p.status] || 'var(--fb-accent)';
 
+    // New AI comment indicator
+    const hasNew = p.comments?.some(c => c.is_new) ||
+                   p.measures?.some(m => m.comments?.some(c => c.is_new));
+    const newDot = hasNew
+      ? `<span title="Neue KI-Anmerkung" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#fbbf24;margin-left:4px;vertical-align:middle"></span>`
+      : '';
+
     rows += `
       <tr onclick="location.href='/problems/${p.id}'" style="border-left:3px solid ${border}">
         <td>${sev}</td>
         <td>
           <a href="/problems/${p.id}" class="text-decoration-none"
              style="color:var(--fb-text);font-size:.82rem;font-weight:500"
-             onclick="event.stopPropagation()">${escHtml(p.title)}</a>
+             onclick="event.stopPropagation()">${escHtml(p.title)}</a>${newDot}
           ${catBadge ? `<br><span class="mt-1 d-inline-block">${catBadge}</span>` : ''}
         </td>
         <td>${statusBadgeHtml(p.status)}</td>
@@ -765,16 +819,17 @@ function renderProblemsTable(problems) {
       <table id="problemsTable" class="table table-dark table-hover table-sm mb-0">
         <thead>
           <tr>
-            <th style="width:2.5rem">Sev.</th>
-            <th>Titel</th>
-            <th style="width:7rem">Status</th>
-            <th style="width:5.5rem">Maßnahmen</th>
-            <th style="width:4rem">Datum</th>
+            <th style="width:2.5rem;cursor:pointer" onclick="probSortBy('severity')">Sev.${sortIcon('severity')}</th>
+            <th style="cursor:pointer" onclick="probSortBy('title')">Titel${sortIcon('title')}</th>
+            <th style="width:7.5rem;cursor:pointer" onclick="probSortBy('status')">Status${sortIcon('status')}</th>
+            <th style="width:5.5rem;cursor:pointer" onclick="probSortBy('measures')">Maßn.${sortIcon('measures')}</th>
+            <th style="width:4.5rem;cursor:pointer" onclick="probSortBy('date')">Datum${sortIcon('date')}</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>`;
+    </div>
+    <div style="font-size:.72rem;color:var(--fb-muted);margin-top:.35rem;text-align:right">${sorted.length} von ${problems.length} Einträge</div>`;
 }
 
 async function startAnalysis() {

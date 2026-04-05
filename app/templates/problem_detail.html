@@ -72,6 +72,19 @@
       padding: .4rem 0; border-bottom: 1px solid var(--fb-border);
     }
     .comment-entry:last-child { border-bottom: none; }
+    .comment-entry.is-new {
+      background: rgba(245,158,11,.08);
+      border-left: 3px solid #fbbf24;
+      padding-left: .5rem;
+      border-radius: .3rem;
+      margin-bottom: .25rem;
+    }
+    .new-badge {
+      display: inline-block; font-size: .65rem; font-weight: 700;
+      background: rgba(245,158,11,.2); color: #fbbf24;
+      border: 1px solid rgba(245,158,11,.4); border-radius: .3rem;
+      padding: .1em .4em; vertical-align: middle; margin-right: .35rem;
+    }
 
     /* Markdown rendered content */
     .md-content { line-height: 1.6; }
@@ -230,11 +243,22 @@ function renderComments(comments, parentType, parentId) {
   const entries = (comments || []).map(c => {
     const ts = new Date(c.created_at).toLocaleString('de-DE',
       {day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'});
+    const newBadge = c.is_new
+      ? `<span class="new-badge"><i class="bi bi-robot me-1"></i>KI-Neu</span>` : '';
+    const readBtn = c.is_new
+      ? `<button class="btn btn-sm btn-link p-0 ms-1" style="font-size:.7rem;color:#fbbf24;white-space:nowrap"
+                 onclick="markCommentRead(${c.id})" title="Als gelesen markieren">
+           <i class="bi bi-check2-circle me-1"></i>Gelesen
+         </button>` : '';
     return `
-      <div class="comment-entry d-flex gap-2 align-items-start">
-        <span style="color:var(--fb-muted);font-size:.75rem;white-space:nowrap;padding-top:2px">${ts}</span>
-        <div class="md-content flex-1" style="font-size:.85rem">${md(c.text)}</div>
-        <button class="btn btn-link p-0 ms-1" style="font-size:.7rem;color:var(--fb-muted)"
+      <div class="comment-entry${c.is_new ? ' is-new' : ''} d-flex gap-2 align-items-start">
+        <div class="flex-1">
+          <div class="d-flex align-items-center gap-1 mb-1" style="font-size:.72rem;color:var(--fb-muted)">
+            ${newBadge}<span>${ts}</span>${readBtn}
+          </div>
+          <div class="md-content" style="font-size:.85rem">${md(c.text)}</div>
+        </div>
+        <button class="btn btn-link p-0 ms-1 flex-shrink-0" style="font-size:.7rem;color:var(--fb-muted)"
                 onclick="deleteComment(${c.id})" title="Löschen">
           <i class="bi bi-trash3"></i>
         </button>
@@ -376,6 +400,11 @@ async function postComment(endpoint, inputId) {
 async function deleteComment(commentId) {
   if (!confirm('Kommentar löschen?')) return;
   await fetch(`/api/ai/comments/${commentId}`, { method: 'DELETE' });
+  await loadProblem();
+}
+
+async function markCommentRead(commentId) {
+  await fetch(`/api/ai/comments/${commentId}/read`, { method: 'PATCH' });
   await loadProblem();
 }
 
