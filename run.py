@@ -32,7 +32,7 @@ if getattr(sys, "frozen", False):
     from app.main import app as _app
     uvicorn.run(
         _app,
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
         reload=False,
         log_level="debug" if debug else "warning",
@@ -40,7 +40,7 @@ if getattr(sys, "frozen", False):
 else:
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
         reload=False,
         log_level="debug" if debug else "warning",

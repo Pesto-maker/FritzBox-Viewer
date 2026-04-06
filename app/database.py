@@ -50,6 +50,35 @@ def run_migrations():
             pass  # Column already exists
         conn.commit()
 
+    _migrate_encrypt_secrets()
+
+
+def _migrate_encrypt_secrets():
+    """Re-encrypt any plaintext secrets with Fernet (one-time migration)."""
+    from .crypto import SECRET_KEYS, encrypt, _fernet
+    from cryptography.fernet import InvalidToken
+
+    with engine.connect() as conn:
+        for key in SECRET_KEYS:
+            row = conn.execute(
+                text("SELECT value FROM app_config WHERE key = :k"),
+                {"k": key},
+            ).fetchone()
+            if not row or not row[0]:
+                continue
+            val = row[0]
+            # If decryption succeeds the value is already encrypted
+            try:
+                _fernet.decrypt(val.encode())
+                continue
+            except (InvalidToken, Exception):
+                pass  # plaintext → encrypt it
+            conn.execute(
+                text("UPDATE app_config SET value = :v WHERE key = :k"),
+                {"v": encrypt(val), "k": key},
+            )
+        conn.commit()
+
 
 def get_db():
     db = SessionLocal()

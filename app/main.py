@@ -4,11 +4,12 @@ import sys
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from .rate_limit import RateLimiter
 from .database import Base, engine, get_db, run_migrations
 from .fritzbox import run_connection_check
 from .models import FetchStatus, LogEntry, AiProblem, AiMeasure, AiComment
@@ -46,6 +47,33 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="FritzBox Viewer", lifespan=lifespan)
 
+
+# ── Lightweight CSRF middleware (Origin-header check) ──────────────────────
+from starlette.middleware.base import BaseHTTPMiddleware
+
+
+class _CsrfMiddleware(BaseHTTPMiddleware):
+    """Block cross-origin mutating requests (POST/PATCH/PUT/DELETE)."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method in ("POST", "PATCH", "PUT", "DELETE"):
+            origin = request.headers.get("origin")
+            if origin:
+                origin_host = origin.split("://", 1)[-1].rstrip("/")
+                if origin_host != request.headers.get("host", ""):
+                    return JSONResponse(
+                        {"status": "error", "message": "CSRF-Prüfung fehlgeschlagen"},
+                        status_code=403,
+                    )
+        return await call_next(request)
+
+
+app.add_middleware(_CsrfMiddleware)
+
+# Rate limiters for expensive operations
+_fetch_limiter = RateLimiter(calls=1, period=30)     # 1 fetch per 30s
+_analyze_limiter = RateLimiter(calls=1, period=60)    # 1 analysis per 60s
+
 _templates_dir = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=_templates_dir)
 
@@ -57,8 +85,6 @@ templates = Jinja2Templates(directory=_templates_dir)
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    # First-run: redirect to the Admin page so the user can enter FritzBox
-    # credentials before the app tries to fetch anything.
     if not cfg.get("fritz_password"):
         return RedirectResponse(url="/admin", status_code=303)
     return templates.TemplateResponse("index.html", {"request": request})
@@ -166,6 +192,11 @@ def api_stats(db: Session = Depends(get_db)):
 
 @app.post("/api/fetch")
 def api_trigger_fetch():
+    if not _fetch_limiter.allow():
+        return JSONResponse(
+            {"status": "error", "message": "Bitte 30 Sekunden zwischen Abrufen warten."},
+            status_code=429,
+        )
     fetch_and_store_logs()
     return {"status": "ok"}
 
@@ -179,11 +210,34 @@ def api_trigger_fetch():
 def api_save_config(data: dict):
     allowed = {"fritz_host", "fritz_user", "fritz_password", "fetch_interval",
                "anthropic_api_key", "system_prompt_logs", "system_prompt_full"}
+    errors = []
     for key, value in data.items():
-        if key in allowed:
-            if key in ("fritz_password", "anthropic_api_key") and set(value) == {"•"}:
+        if key not in allowed:
+            continue
+        value = str(value)
+        if key in ("fritz_password", "anthropic_api_key") and set(value) == {"•"}:
+            continue
+        # Validate specific fields
+        if key == "fetch_interval":
+            try:
+                iv = int(value)
+                if iv < 60 or iv > 86400:
+                    errors.append("Abrufintervall muss zwischen 60 und 86400 liegen.")
+                    continue
+            except ValueError:
+                errors.append("Abrufintervall muss eine Zahl sein.")
                 continue
-            cfg.set(key, str(value).strip())
+        if key == "fritz_host":
+            v = value.strip()
+            if not v or len(v) > 253:
+                errors.append("Host/IP-Adresse ungültig.")
+                continue
+        if key == "fritz_user" and len(value) > 128:
+            errors.append("Benutzername zu lang (max. 128 Zeichen).")
+            continue
+        cfg.set(key, value.strip())
+    if errors:
+        return JSONResponse({"status": "error", "message": " ".join(errors)}, status_code=400)
     return {"status": "ok"}
 
 
@@ -222,9 +276,10 @@ def api_fetch_with_sid(data: dict, db: Session = Depends(get_db)):
         db.commit()
         return {"status": "ok", "total_received": len(entries), "new_entries": new_count}
     except Exception as exc:
+        logger.error("SID-Fetch fehlgeschlagen: %s", exc)
         status.last_error = str(exc)
         db.commit()
-        return {"status": "error", "message": str(exc)}
+        return {"status": "error", "message": "Abruf fehlgeschlagen. Details im Server-Log."}
 
 
 # ---------------------------------------------------------------------------
@@ -392,7 +447,12 @@ def api_get_default_system_prompts():
 
 @app.post("/api/ai/import")
 def api_ai_import(data: dict, db: Session = Depends(get_db)):
-    """Import AI analysis results (JSON array of problems with measures) from chat export."""
+    """Import AI analysis results.
+
+    Deduplication: if a problem with the same title (case-insensitive)
+    already exists, new measures and the ai_comment are appended to the
+    existing problem instead of creating a duplicate.
+    """
     import time as _time
     problems = data.get("problems")
     if not isinstance(problems, list):
@@ -400,22 +460,54 @@ def api_ai_import(data: dict, db: Session = Depends(get_db)):
 
     required = {"title", "description", "severity"}
     run_id = int(_time.time())
-    count = 0
+    created = 0
+    updated = 0
+
+    # Build a lookup of existing problem titles → AiProblem objects
+    existing = {
+        p.title.strip().lower(): p
+        for p in db.query(AiProblem).all()
+    }
+
     for prob in problems:
         if not isinstance(prob, dict) or not required.issubset(prob.keys()):
             continue
-        p = AiProblem(
-            run_id=run_id,
-            title=prob["title"],
-            description=prob["description"],
-            severity=prob.get("severity", "info"),
-            category=prob.get("category"),
-            status="pending",
-        )
-        db.add(p)
-        db.flush()
-        for m in prob.get("measures", []):
-            if isinstance(m, dict) and "title" in m and "description" in m:
+
+        title = prob["title"].strip()
+        existing_problem = existing.get(title.lower())
+
+        if existing_problem:
+            # ── Merge into existing problem ──────────────────────────
+            p = existing_problem
+
+            # Add ai_comment as a new comment on the existing problem
+            ai_c = (prob.get("ai_comment") or "").strip()
+            if ai_c:
+                db.add(AiComment(parent_type="problem", parent_id=p.id,
+                                 text=ai_c, is_new=True))
+
+            # Add only measures whose title doesn't already exist
+            existing_measure_titles = {
+                m.title.strip().lower()
+                for m in db.query(AiMeasure).filter(AiMeasure.problem_id == p.id).all()
+            }
+            for m in prob.get("measures", []):
+                if not (isinstance(m, dict) and "title" in m and "description" in m):
+                    continue
+                if m["title"].strip().lower() in existing_measure_titles:
+                    # Measure already exists — just add ai_comment if present
+                    existing_m = (
+                        db.query(AiMeasure)
+                        .filter(AiMeasure.problem_id == p.id,
+                                func.lower(AiMeasure.title) == m["title"].strip().lower())
+                        .first()
+                    )
+                    if existing_m:
+                        mc = (m.get("ai_comment") or "").strip()
+                        if mc:
+                            db.add(AiComment(parent_type="measure", parent_id=existing_m.id,
+                                             text=mc, is_new=True))
+                    continue
                 mobj = AiMeasure(
                     problem_id=p.id,
                     title=m["title"],
@@ -424,17 +516,46 @@ def api_ai_import(data: dict, db: Session = Depends(get_db)):
                 )
                 db.add(mobj)
                 db.flush()
-                ai_c = (m.get("ai_comment") or "").strip()
-                if ai_c:
+                mc = (m.get("ai_comment") or "").strip()
+                if mc:
                     db.add(AiComment(parent_type="measure", parent_id=mobj.id,
-                                     text=ai_c, is_new=True))
-        ai_c = (prob.get("ai_comment") or "").strip()
-        if ai_c:
-            db.add(AiComment(parent_type="problem", parent_id=p.id,
-                             text=ai_c, is_new=True))
-        count += 1
+                                     text=mc, is_new=True))
+            updated += 1
+        else:
+            # ── Create new problem ───────────────────────────────────
+            p = AiProblem(
+                run_id=run_id,
+                title=title,
+                description=prob["description"],
+                severity=prob.get("severity", "info"),
+                category=prob.get("category"),
+                status="pending",
+            )
+            db.add(p)
+            db.flush()
+            for m in prob.get("measures", []):
+                if isinstance(m, dict) and "title" in m and "description" in m:
+                    mobj = AiMeasure(
+                        problem_id=p.id,
+                        title=m["title"],
+                        description=m["description"],
+                        status="pending",
+                    )
+                    db.add(mobj)
+                    db.flush()
+                    mc = (m.get("ai_comment") or "").strip()
+                    if mc:
+                        db.add(AiComment(parent_type="measure", parent_id=mobj.id,
+                                         text=mc, is_new=True))
+            ai_c = (prob.get("ai_comment") or "").strip()
+            if ai_c:
+                db.add(AiComment(parent_type="problem", parent_id=p.id,
+                                 text=ai_c, is_new=True))
+            existing[title.lower()] = p
+            created += 1
+
     db.commit()
-    return {"status": "ok", "count": count}
+    return {"status": "ok", "created": created, "updated": updated}
 
 
 @app.post("/api/ai/problems")
@@ -464,13 +585,18 @@ def api_create_problem(data: dict, db: Session = Depends(get_db)):
 
 @app.post("/api/ai/analyze")
 def api_ai_analyze(db: Session = Depends(get_db)):
+    if not _analyze_limiter.allow():
+        return JSONResponse(
+            {"status": "error", "message": "Bitte 60 Sekunden zwischen Analysen warten."},
+            status_code=429,
+        )
     from .ai_analyzer import run_analysis
     try:
         problems = run_analysis(db)
         return {"status": "ok", "count": len(problems)}
     except Exception as exc:
         logger.error("AI-Analyse fehlgeschlagen: %s", exc)
-        return {"status": "error", "message": str(exc)}
+        return {"status": "error", "message": "KI-Analyse fehlgeschlagen. Details im Server-Log."}
 
 
 @app.get("/api/ai/problems")
@@ -642,17 +768,23 @@ def api_mark_comment_read(comment_id: int, db: Session = Depends(get_db)):
 
 
 # ---------------------------------------------------------------------------
-# Debug API
+# Debug API (only available in debug mode)
 # ---------------------------------------------------------------------------
 
 
 @app.get("/api/debug")
 def api_debug():
+    if not _debug:
+        return JSONResponse({"status": "error", "message": "Nur im Debug-Modus verfügbar"},
+                            status_code=403)
     return run_connection_check()
 
 
 @app.get("/api/debug/services")
 def api_debug_services():
+    if not _debug:
+        return JSONResponse({"status": "error", "message": "Nur im Debug-Modus verfügbar"},
+                            status_code=403)
     from fritzconnection.core.fritzconnection import FritzConnection
     fc = FritzConnection(
         address=cfg.get("fritz_host"),

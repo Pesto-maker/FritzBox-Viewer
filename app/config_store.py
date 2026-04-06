@@ -1,8 +1,10 @@
 """
 DB-backed configuration store.
 Priority: DB value → .env / environment variable → default
+Secrets (fritz_password, anthropic_api_key) are stored Fernet-encrypted.
 """
 import os
+from .crypto import SECRET_KEYS, decrypt, encrypt
 from .database import SessionLocal
 from .models import AppConfig
 
@@ -98,7 +100,10 @@ def get(key: str) -> str:
     try:
         row = db.query(AppConfig).filter(AppConfig.key == key).first()
         if row and row.value is not None:
-            return row.value
+            value = row.value
+            if key in SECRET_KEYS:
+                value = decrypt(value)
+            return value
     finally:
         db.close()
     env_key, default = _DEFAULTS.get(key, (None, ""))
@@ -108,13 +113,14 @@ def get(key: str) -> str:
 
 
 def set(key: str, value: str):
+    stored = encrypt(value) if key in SECRET_KEYS and value else value
     db = SessionLocal()
     try:
         row = db.query(AppConfig).filter(AppConfig.key == key).first()
         if row:
-            row.value = value
+            row.value = stored
         else:
-            db.add(AppConfig(key=key, value=value))
+            db.add(AppConfig(key=key, value=stored))
         db.commit()
     finally:
         db.close()
