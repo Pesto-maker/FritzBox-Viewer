@@ -311,6 +311,9 @@ function renderProblem(p) {
       ${renderComments(p.comments, 'problem', p.id)}
       <div class="d-flex flex-wrap gap-2 mt-3 pt-3" style="border-top:1px solid var(--fb-border)">
         ${problemStatusBtns(p)}
+        <button class="btn btn-sm btn-outline-danger ms-auto" onclick="deleteProblem(${p.id})">
+          <i class="bi bi-trash3 me-1"></i>Problem löschen
+        </button>
       </div>
     </div>`;
 
@@ -338,6 +341,9 @@ function renderProblem(p) {
         ${renderComments(m.comments, 'measure', m.id)}
         <div class="d-flex flex-wrap gap-2 mt-3 pt-2" style="border-top:1px solid var(--fb-border)">
           ${measureStatusBtns(m)}
+          <button class="btn btn-sm btn-outline-danger ms-auto" style="font-size:.75rem" onclick="deleteMeasure(${m.id})">
+            <i class="bi bi-trash3 me-1"></i>Löschen
+          </button>
         </div>
       </div>`;
   }
@@ -394,6 +400,18 @@ async function postComment(endpoint, inputId) {
     body: JSON.stringify({ text })
   });
   input.value = '';
+  await loadProblem();
+}
+
+async function deleteProblem(problemId) {
+  if (!confirm('Problem mit allen Maßnahmen und Kommentaren löschen?')) return;
+  await fetch(`/api/ai/problems/${problemId}`, { method: 'DELETE' });
+  location.href = '/';
+}
+
+async function deleteMeasure(measureId) {
+  if (!confirm('Maßnahme mit allen Kommentaren löschen?')) return;
+  await fetch(`/api/ai/measures/${measureId}`, { method: 'DELETE' });
   await loadProblem();
 }
 

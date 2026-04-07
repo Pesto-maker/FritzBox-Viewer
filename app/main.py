@@ -311,6 +311,123 @@ def api_export_logs(db: Session = Depends(get_db)):
     )
 
 
+@app.get("/api/export/clipboard")
+def api_export_clipboard(
+    db: Session = Depends(get_db),
+    limit: int = Query(default=400, ge=10, le=10000),
+):
+    """Return system prompt + export data as a single clipboard-ready text.
+
+    Only logs are limited; all problems with status pending/check/failed
+    are always included.
+    """
+    from datetime import timezone
+    import datetime as dt
+
+    prompt = cfg.get("system_prompt_full")
+    now_str = dt.datetime.now(timezone.utc).strftime("%d.%m.%Y %H:%M")
+
+    # Logs (newest first, then reversed for chronological output)
+    total_logs = db.query(func.count(LogEntry.id)).scalar()
+    entries = (
+        db.query(LogEntry)
+        .order_by(LogEntry.timestamp.desc())
+        .limit(limit)
+        .all()
+    )
+    entries.reverse()
+
+    # Problems (only open/check/failed — relevant for the AI)
+    problems = (
+        db.query(AiProblem)
+        .filter(AiProblem.status.in_(["pending", "check", "failed"]))
+        .order_by(AiProblem.run_id.desc(), AiProblem.id.asc())
+        .all()
+    )
+    measures = db.query(AiMeasure).all()
+    all_comments = db.query(AiComment).order_by(AiComment.created_at.asc()).all()
+
+    measures_by_problem: dict[int, list] = {}
+    for m in measures:
+        measures_by_problem.setdefault(m.problem_id, []).append(m)
+
+    comments_by_parent: dict[tuple, list] = {}
+    for c in all_comments:
+        key = (c.parent_type, c.parent_id)
+        comments_by_parent.setdefault(key, []).append(c)
+
+    SEV_LABEL = {"critical": "KRITISCH", "warning": "WARNUNG", "info": "INFO"}
+    STATUS_LABEL = {
+        "pending": "offen",
+        "check":   "in Prüfung",
+        "rejected": "abgelehnt",
+        "success": "erfolgreich umgesetzt",
+        "failed": "umgesetzt, nicht erfolgreich",
+    }
+
+    def fmt_comments(parent_type, parent_id, indent):
+        clist = comments_by_parent.get((parent_type, parent_id), [])
+        if not clist:
+            return []
+        out = [f"{indent}Kommentare:"]
+        for c in clist:
+            ts = c.created_at.strftime("%d.%m.%y %H:%M")
+            out.append(f"{indent}  [{ts}] {c.text}")
+        return out
+
+    lines = [
+        prompt,
+        "",
+        "---",
+        "",
+        f"=== FritzBox Viewer — Export für KI-Analyse ===",
+        f"Exportiert am: {now_str} UTC",
+        "",
+        f"=== PROTOKOLLEINTRÄGE ({len(entries)} von {total_logs} Einträgen, chronologisch) ===",
+        "",
+    ]
+    for e in entries:
+        lines.append(f"{e.timestamp.strftime('%d.%m.%y %H:%M:%S')}  [{e.category:<10}]  {e.message}")
+
+    if problems:
+        lines += ["", "=" * 70, "", "=== OFFENE PROBLEME & MAßNAHMEN ==="]
+        for p in problems:
+            sev = SEV_LABEL.get(p.severity, p.severity.upper())
+            status_lbl = STATUS_LABEL.get(p.status, p.status)
+            lines += [
+                "",
+                f"[{sev}] [ID:{p.id}] {p.title}",
+                f"  Status: {status_lbl}",
+                f"  Kategorie: {p.category or '-'}",
+                f"  Beschreibung: {p.description}",
+            ]
+            lines += fmt_comments("problem", p.id, "  ")
+            p_measures = measures_by_problem.get(p.id, [])
+            if p_measures:
+                lines.append("  Maßnahmen:")
+                for i, m in enumerate(p_measures, 1):
+                    m_status = STATUS_LABEL.get(m.status, m.status)
+                    lines += [
+                        f"  [{i}] [ID:{m.id}] {m.title}",
+                        f"      Status: {m_status}",
+                        f"      Beschreibung: {m.description}",
+                    ]
+                    lines += fmt_comments("measure", m.id, "      ")
+
+    text = "\n".join(lines)
+    return {
+        "text": text,
+        "log_count": len(entries),
+        "total_logs": total_logs,
+    }
+
+
+@app.get("/api/config/has-apikey")
+def api_has_apikey():
+    """Check whether an Anthropic API key is configured."""
+    return {"has_key": bool(cfg.get("anthropic_api_key"))}
+
+
 @app.get("/api/export/full", response_class=PlainTextResponse)
 def api_export_full(db: Session = Depends(get_db)):
     """Export logs + all problems and measures with status and comments."""
@@ -390,7 +507,7 @@ def api_export_full(db: Session = Depends(get_db)):
                 status_lbl = STATUS_LABEL.get(p.status, p.status)
                 lines += [
                     "",
-                    f"[{sev}] {p.title}",
+                    f"[{sev}] [ID:{p.id}] {p.title}",
                     f"  Status: {status_lbl}",
                     f"  Identifiziert am: {p.created_at.strftime('%d.%m.%Y %H:%M:%S')} UTC",
                     f"  Kategorie: {p.category or '-'}",
@@ -403,7 +520,7 @@ def api_export_full(db: Session = Depends(get_db)):
                     for i, m in enumerate(p_measures, 1):
                         m_status = STATUS_LABEL.get(m.status, m.status)
                         lines += [
-                            f"  [{i}] {m.title}",
+                            f"  [{i}] [ID:{m.id}] {m.title}",
                             f"      Status: {m_status}",
                             f"      Beschreibung: {m.description}",
                         ]
@@ -449,9 +566,13 @@ def api_get_default_system_prompts():
 def api_ai_import(data: dict, db: Session = Depends(get_db)):
     """Import AI analysis results.
 
-    Deduplication: if a problem with the same title (case-insensitive)
-    already exists, new measures and the ai_comment are appended to the
-    existing problem instead of creating a duplicate.
+    Matching priority:
+    1. ``id`` field — direct lookup by problem ID (most reliable)
+    2. ``title`` — case-insensitive title match (fallback)
+    3. No match — create a new problem
+
+    Existing problems only receive new comments and new measures;
+    duplicates are never created.
     """
     import time as _time
     problems = data.get("problems")
@@ -463,66 +584,78 @@ def api_ai_import(data: dict, db: Session = Depends(get_db)):
     created = 0
     updated = 0
 
-    # Build a lookup of existing problem titles → AiProblem objects
-    existing = {
-        p.title.strip().lower(): p
-        for p in db.query(AiProblem).all()
-    }
+    # Build lookups for existing problems
+    all_problems = db.query(AiProblem).all()
+    by_id = {p.id: p for p in all_problems}
+    by_title = {p.title.strip().lower(): p for p in all_problems}
+
+    def _merge_measures(p, measures_data):
+        """Add only new measures to an existing problem."""
+        existing_titles = {
+            m.title.strip().lower()
+            for m in db.query(AiMeasure).filter(AiMeasure.problem_id == p.id).all()
+        }
+        for m in measures_data:
+            if not (isinstance(m, dict) and "title" in m and "description" in m):
+                continue
+            m_title_lower = m["title"].strip().lower()
+            if m_title_lower in existing_titles:
+                # Measure exists — just add ai_comment if present
+                existing_m = (
+                    db.query(AiMeasure)
+                    .filter(AiMeasure.problem_id == p.id,
+                            func.lower(AiMeasure.title) == m_title_lower)
+                    .first()
+                )
+                if existing_m:
+                    mc = (m.get("ai_comment") or "").strip()
+                    if mc:
+                        db.add(AiComment(parent_type="measure", parent_id=existing_m.id,
+                                         text=mc, is_new=True))
+                continue
+            mobj = AiMeasure(
+                problem_id=p.id,
+                title=m["title"],
+                description=m["description"],
+                status="pending",
+            )
+            db.add(mobj)
+            db.flush()
+            mc = (m.get("ai_comment") or "").strip()
+            if mc:
+                db.add(AiComment(parent_type="measure", parent_id=mobj.id,
+                                 text=mc, is_new=True))
 
     for prob in problems:
         if not isinstance(prob, dict) or not required.issubset(prob.keys()):
             continue
 
         title = prob["title"].strip()
-        existing_problem = existing.get(title.lower())
+
+        # ── 1. Match by explicit ID ─────────────────────────────────
+        existing_problem = None
+        prob_id = prob.get("id")
+        if prob_id is not None:
+            try:
+                existing_problem = by_id.get(int(prob_id))
+            except (ValueError, TypeError):
+                pass
+
+        # ── 2. Fallback: match by title ─────────────────────────────
+        if not existing_problem:
+            existing_problem = by_title.get(title.lower())
 
         if existing_problem:
-            # ── Merge into existing problem ──────────────────────────
+            # ── Merge into existing problem ─────────────────────────
             p = existing_problem
-
-            # Add ai_comment as a new comment on the existing problem
             ai_c = (prob.get("ai_comment") or "").strip()
             if ai_c:
                 db.add(AiComment(parent_type="problem", parent_id=p.id,
                                  text=ai_c, is_new=True))
-
-            # Add only measures whose title doesn't already exist
-            existing_measure_titles = {
-                m.title.strip().lower()
-                for m in db.query(AiMeasure).filter(AiMeasure.problem_id == p.id).all()
-            }
-            for m in prob.get("measures", []):
-                if not (isinstance(m, dict) and "title" in m and "description" in m):
-                    continue
-                if m["title"].strip().lower() in existing_measure_titles:
-                    # Measure already exists — just add ai_comment if present
-                    existing_m = (
-                        db.query(AiMeasure)
-                        .filter(AiMeasure.problem_id == p.id,
-                                func.lower(AiMeasure.title) == m["title"].strip().lower())
-                        .first()
-                    )
-                    if existing_m:
-                        mc = (m.get("ai_comment") or "").strip()
-                        if mc:
-                            db.add(AiComment(parent_type="measure", parent_id=existing_m.id,
-                                             text=mc, is_new=True))
-                    continue
-                mobj = AiMeasure(
-                    problem_id=p.id,
-                    title=m["title"],
-                    description=m["description"],
-                    status="pending",
-                )
-                db.add(mobj)
-                db.flush()
-                mc = (m.get("ai_comment") or "").strip()
-                if mc:
-                    db.add(AiComment(parent_type="measure", parent_id=mobj.id,
-                                     text=mc, is_new=True))
+            _merge_measures(p, prob.get("measures", []))
             updated += 1
         else:
-            # ── Create new problem ───────────────────────────────────
+            # ── Create new problem ──────────────────────────────────
             p = AiProblem(
                 run_id=run_id,
                 title=title,
@@ -551,7 +684,8 @@ def api_ai_import(data: dict, db: Session = Depends(get_db)):
             if ai_c:
                 db.add(AiComment(parent_type="problem", parent_id=p.id,
                                  text=ai_c, is_new=True))
-            existing[title.lower()] = p
+            by_id[p.id] = p
+            by_title[title.lower()] = p
             created += 1
 
     db.commit()
@@ -763,6 +897,46 @@ def api_mark_comment_read(comment_id: int, db: Session = Depends(get_db)):
     if not c:
         return {"status": "error", "message": "Nicht gefunden"}
     c.is_new = False
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.delete("/api/ai/problems/{problem_id}")
+def api_delete_problem(problem_id: int, db: Session = Depends(get_db)):
+    """Delete a problem and all its measures and comments."""
+    p = db.query(AiProblem).filter(AiProblem.id == problem_id).first()
+    if not p:
+        return {"status": "error", "message": "Nicht gefunden"}
+    # Delete comments on the problem itself
+    db.query(AiComment).filter(
+        AiComment.parent_type == "problem", AiComment.parent_id == problem_id
+    ).delete()
+    # Delete comments on all measures of this problem
+    measure_ids = [
+        m.id for m in db.query(AiMeasure).filter(AiMeasure.problem_id == problem_id).all()
+    ]
+    if measure_ids:
+        db.query(AiComment).filter(
+            AiComment.parent_type == "measure", AiComment.parent_id.in_(measure_ids)
+        ).delete(synchronize_session="fetch")
+    # Delete measures
+    db.query(AiMeasure).filter(AiMeasure.problem_id == problem_id).delete()
+    # Delete the problem
+    db.delete(p)
+    db.commit()
+    return {"status": "ok"}
+
+
+@app.delete("/api/ai/measures/{measure_id}")
+def api_delete_measure(measure_id: int, db: Session = Depends(get_db)):
+    """Delete a measure and all its comments."""
+    m = db.query(AiMeasure).filter(AiMeasure.id == measure_id).first()
+    if not m:
+        return {"status": "error", "message": "Nicht gefunden"}
+    db.query(AiComment).filter(
+        AiComment.parent_type == "measure", AiComment.parent_id == measure_id
+    ).delete()
+    db.delete(m)
     db.commit()
     return {"status": "ok"}
 

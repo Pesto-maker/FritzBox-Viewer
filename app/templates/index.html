@@ -193,13 +193,8 @@
       .split-divider { display: none; }
     }
 
-    /* ── System prompt modal textarea ────────────────────────── */
-    #systemPromptText {
-      background: var(--fb-surface2); border-color: var(--fb-border);
-      color: var(--fb-text); font-family: monospace; font-size: .8rem;
-      resize: none;
-    }
-    #systemPromptText:focus { border-color: var(--fb-accent); box-shadow: 0 0 0 2px rgba(79,110,247,.25); }
+    /* ── Wizard step badges ────────────────────────────────────── */
+    #wizardModal .badge.rounded-pill { flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -267,12 +262,6 @@
           <button class="btn btn-sm btn-outline-primary" id="btnFetch" onclick="triggerFetch()">
             <i class="bi bi-arrow-clockwise me-1"></i>Abrufen
           </button>
-          <a href="/api/export/logs" class="btn btn-sm btn-outline-light" download>
-            <i class="bi bi-download me-1"></i>Logs herunterladen
-          </a>
-          <button class="btn btn-sm btn-outline-info" onclick="openSystemPromptModal('logs')">
-            <i class="bi bi-clipboard me-1"></i>Systemprompt
-          </button>
         </div>
 
         <!-- Category filter -->
@@ -318,20 +307,11 @@
         <!-- Toolbar -->
         <div class="panel-toolbar">
           <span class="panel-title"><i class="bi bi-robot me-1"></i>Probleme &amp; Maßnahmen</span>
-          <button class="btn btn-sm btn-outline-info" id="btnAnalyze" onclick="startAnalysis()">
+          <button class="btn btn-sm btn-outline-info" id="btnAnalyze" onclick="smartAnalysis()">
             <i class="bi bi-robot me-1"></i>KI-Analyse
           </button>
           <button class="btn btn-sm btn-outline-success" onclick="openCreateProblemModal()">
             <i class="bi bi-plus-lg me-1"></i>Neu
-          </button>
-          <button class="btn btn-sm btn-outline-light" onclick="downloadFullExport()">
-            <i class="bi bi-download me-1"></i>Vollexport
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="openImportModal()">
-            <i class="bi bi-upload me-1"></i>Import
-          </button>
-          <button class="btn btn-sm btn-outline-info" onclick="openSystemPromptModal('full')">
-            <i class="bi bi-clipboard me-1"></i>Prompt
           </button>
         </div>
 
@@ -425,59 +405,89 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════ IMPORT MODAL -->
-<div class="modal fade" id="importModal" tabindex="-1">
+<!-- ════════════════════════════════════════════════════════ ANALYSIS WIZARD MODAL -->
+<div class="modal fade" id="wizardModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content" style="background:var(--fb-surface);border-color:var(--fb-border)">
       <div class="modal-header" style="border-color:var(--fb-border)">
         <h5 class="modal-title" style="color:var(--fb-accent2)">
-          <i class="bi bi-upload me-2"></i>KI-Analyse importieren
+          <i class="bi bi-robot me-2"></i>KI-Analyse (manuell)
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p class="small" style="color:var(--fb-muted)">
-          Füge hier die JSON-Antwort des KI-Chats ein. Das Format entspricht dem im
-          Systemprompt beschriebenen Schema (Array mit Problemen und Maßnahmen).
-        </p>
-        <textarea id="importJsonText" class="form-control" rows="14"
-                  placeholder='[{"title":"...","description":"...","severity":"warning","category":"wifi","measures":[{"title":"...","description":"..."}]}]'
-                  style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text);
-                         font-family:monospace;font-size:.78rem;resize:vertical"></textarea>
-        <div id="importError" class="alert alert-danger py-2 small mt-2 d-none"></div>
-      </div>
-      <div class="modal-footer" style="border-color:var(--fb-border)">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
-        <button type="button" class="btn btn-success" id="btnImport" onclick="importAnalysis()">
-          <i class="bi bi-upload me-1"></i>Importieren
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ════════════════════════════════════════════════════════ SYSTEM PROMPT MODAL -->
-<div class="modal fade" id="systemPromptModal" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content" style="background:var(--fb-surface);border-color:var(--fb-border)">
-      <div class="modal-header" style="border-color:var(--fb-border)">
-        <h5 class="modal-title" style="color:var(--fb-accent2)">
-          <i class="bi bi-clipboard me-2"></i>Systemprompt für KI-Chat
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="small" style="color:var(--fb-muted)">
-          Kopiere diesen Text und füge ihn als erste Nachricht in den KI-Chat ein —
-          bevor du die heruntergeladene Export-Datei hochlädst.
-        </p>
-        <textarea id="systemPromptText" class="form-control" rows="12" readonly></textarea>
+        <!-- ── Step 1: Copy to clipboard ── -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill" style="background:var(--fb-accent);font-size:.8rem;width:1.6rem;height:1.6rem;display:flex;align-items:center;justify-content:center">1</span>
+            <strong style="color:var(--fb-text)">Daten kopieren</strong>
+          </div>
+          <p class="small mb-2" style="color:var(--fb-muted)">
+            Systemprompt und Export-Daten werden zusammen in die Zwischenablage kopiert.
+          </p>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button class="btn btn-primary" id="btnWizardCopy" onclick="wizardCopy()">
+              <i class="bi bi-clipboard me-1"></i>In Zwischenablage kopieren
+            </button>
+            <span id="wizardCopyInfo" class="small" style="color:var(--fb-muted)"></span>
+          </div>
+          <div id="wizardCopyHint" class="d-none mt-3 p-3" style="background:var(--fb-surface2);border:1px solid var(--fb-border);border-radius:.5rem">
+            <p class="small mb-2" style="color:var(--fb-muted)">
+              <i class="bi bi-info-circle me-1"></i>Falls der KI-Chat meldet, dass der Text zu lang ist, reduziere die Anzahl der Log-Einträge:
+            </p>
+            <div class="d-flex align-items-center gap-2">
+              <label class="small" style="color:var(--fb-text);white-space:nowrap">Letzte</label>
+              <input type="number" id="wizardLogLimit" class="form-control form-control-sm" value="400"
+                     min="10" max="10000" step="50"
+                     style="width:6rem;background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text)" />
+              <label class="small" style="color:var(--fb-text);white-space:nowrap">Einträge</label>
+              <button class="btn btn-sm btn-outline-primary" onclick="wizardCopy()">
+                <i class="bi bi-clipboard me-1"></i>Erneut kopieren
+              </button>
+            </div>
+            <p class="small mt-2 mb-0" style="color:var(--fb-muted)">
+              Offene Probleme &amp; Maßnahmen werden immer mitgesendet.
+            </p>
+          </div>
+        </div>
+
+        <!-- ── Step 2: Paste in AI chat ── -->
+        <div class="mb-4">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill" style="background:var(--fb-accent);font-size:.8rem;width:1.6rem;height:1.6rem;display:flex;align-items:center;justify-content:center">2</span>
+            <strong style="color:var(--fb-text)">In KI-Chat einfügen</strong>
+          </div>
+          <p class="small mb-0" style="color:var(--fb-muted)">
+            Öffne den KI-Chat deiner Wahl (z.B. ChatGPT, Claude, Gemini), füge den kopierten Text ein und sende die Nachricht.
+            Die KI antwortet mit einer JSON-Analyse.
+          </p>
+        </div>
+
+        <!-- ── Step 3: Import results ── -->
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge rounded-pill" style="background:var(--fb-accent);font-size:.8rem;width:1.6rem;height:1.6rem;display:flex;align-items:center;justify-content:center">3</span>
+            <strong style="color:var(--fb-text)">Ergebnis importieren</strong>
+          </div>
+          <p class="small mb-2" style="color:var(--fb-muted)">
+            Kopiere die JSON-Antwort der KI und füge sie hier ein:
+          </p>
+          <textarea id="wizardImportText" class="form-control" rows="10"
+                    placeholder='[{"title":"...","description":"...","severity":"warning","category":"wifi","measures":[...]}]'
+                    style="background:var(--fb-surface2);border-color:var(--fb-border);color:var(--fb-text);
+                           font-family:monospace;font-size:.78rem;resize:vertical"></textarea>
+          <div id="wizardImportError" class="alert alert-danger py-2 small mt-2 d-none"></div>
+          <div class="mt-2">
+            <button class="btn btn-success" id="btnWizardImport" onclick="wizardImport()">
+              <i class="bi bi-upload me-1"></i>Importieren
+            </button>
+          </div>
+        </div>
+
       </div>
       <div class="modal-footer" style="border-color:var(--fb-border)">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
-        <button type="button" class="btn btn-primary" id="copyPromptBtn" onclick="copySystemPrompt()">
-          <i class="bi bi-clipboard me-1"></i>Kopieren
-        </button>
       </div>
     </div>
   </div>
@@ -551,47 +561,77 @@
   });
 })();
 
-// ── System Prompts (loaded from API) ─────────────────────────────────────
-let SYSTEM_PROMPT_LOGS = '';
-let SYSTEM_PROMPT_FULL_TEXT = '';
+// ── Smart Analysis Button ────────────────────────────────────────────────
+let _hasApiKey = null;
 
-async function loadSystemPrompts() {
-  try {
-    const res  = await fetch('/api/ai/system-prompts');
-    const data = await res.json();
-    SYSTEM_PROMPT_LOGS      = data.logs || '';
-    SYSTEM_PROMPT_FULL_TEXT = data.full || '';
-  } catch(e) {
-    console.warn('Systemprompts konnten nicht geladen werden:', e);
+async function smartAnalysis() {
+  // Check API key status (cache it)
+  if (_hasApiKey === null) {
+    try {
+      const res = await fetch('/api/config/has-apikey');
+      const json = await res.json();
+      _hasApiKey = json.has_key;
+    } catch(e) { _hasApiKey = false; }
+  }
+
+  if (_hasApiKey) {
+    // Automatic analysis via configured API key
+    await startAnalysis();
+  } else {
+    // Open wizard for manual flow
+    openWizardModal();
   }
 }
 
-// Legacy alias used by openSystemPromptModal
-const getPrompt = (type) => type === 'full' ? SYSTEM_PROMPT_FULL_TEXT : SYSTEM_PROMPT_LOGS;
-
-
-async function downloadFullExport() {
-  // Trigger download, then show system prompt modal
-  const a = document.createElement('a');
-  a.href = '/api/export/full';
-  a.download = '';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  // Small delay so browser starts download before modal opens
-  setTimeout(() => openSystemPromptModal('full'), 300);
+function openWizardModal() {
+  document.getElementById('wizardImportText').value = '';
+  document.getElementById('wizardImportError').classList.add('d-none');
+  document.getElementById('wizardCopyInfo').textContent = '';
+  document.getElementById('wizardCopyHint').classList.add('d-none');
+  const btn = document.getElementById('btnWizardCopy');
+  btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>In Zwischenablage kopieren';
+  new bootstrap.Modal(document.getElementById('wizardModal')).show();
 }
 
-function openImportModal() {
-  document.getElementById('importJsonText').value = '';
-  document.getElementById('importError').classList.add('d-none');
-  new bootstrap.Modal(document.getElementById('importModal')).show();
+async function wizardCopy() {
+  const btn = document.getElementById('btnWizardCopy');
+  const info = document.getElementById('wizardCopyInfo');
+  const limit = parseInt(document.getElementById('wizardLogLimit')?.value) || 400;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-sm me-1" role="status"></span>Lade…';
+  info.textContent = '';
+
+  try {
+    const res = await fetch(`/api/export/clipboard?limit=${limit}`);
+    const json = await res.json();
+    await navigator.clipboard.writeText(json.text);
+
+    const sizeKB = Math.round(json.text.length / 1024);
+    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Kopiert!';
+    info.textContent = `${json.log_count} von ${json.total_logs} Logs · ~${sizeKB} KB`;
+    info.style.color = '#4ade80';
+
+    // Show the "too large" hint after first successful copy
+    document.getElementById('wizardCopyHint').classList.remove('d-none');
+
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>In Zwischenablage kopieren';
+      info.style.color = 'var(--fb-muted)';
+    }, 3000);
+  } catch(e) {
+    btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>In Zwischenablage kopieren';
+    info.textContent = 'Fehler: ' + e.message;
+    info.style.color = '#f87171';
+  } finally {
+    btn.disabled = false;
+  }
 }
 
-async function importAnalysis() {
-  const btn = document.getElementById('btnImport');
-  const errEl = document.getElementById('importError');
-  const raw = document.getElementById('importJsonText').value.trim();
+async function wizardImport() {
+  const btn = document.getElementById('btnWizardImport');
+  const errEl = document.getElementById('wizardImportError');
+  const raw = document.getElementById('wizardImportText').value.trim();
 
   errEl.classList.add('d-none');
   if (!raw) {
@@ -622,9 +662,12 @@ async function importAnalysis() {
     });
     const json = await res.json();
     if (json.status === 'ok') {
-      bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+      bootstrap.Modal.getInstance(document.getElementById('wizardModal')).hide();
       await loadProblems();
-      showAnalysisResult('success', `${json.count} Problem(e) importiert.`);
+      const parts = [];
+      if (json.created) parts.push(`${json.created} neu`);
+      if (json.updated) parts.push(`${json.updated} aktualisiert`);
+      showAnalysisResult('success', `Import erfolgreich: ${parts.join(', ') || 'keine Änderungen'}.`);
     } else {
       errEl.textContent = json.message || 'Unbekannter Fehler';
       errEl.classList.remove('d-none');
@@ -636,22 +679,6 @@ async function importAnalysis() {
     btn.disabled = false;
     btn.innerHTML = '<i class="bi bi-upload me-1"></i>Importieren';
   }
-}
-
-function openSystemPromptModal(type) {
-  document.getElementById('systemPromptText').value = getPrompt(type);
-  const btn = document.getElementById('copyPromptBtn');
-  btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Kopieren';
-  new bootstrap.Modal(document.getElementById('systemPromptModal')).show();
-}
-
-function copySystemPrompt() {
-  const text = document.getElementById('systemPromptText').value;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyPromptBtn');
-    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Kopiert!';
-    setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Kopieren', 2000);
-  });
 }
 
 // ── Logs state + DataTable ─────────────────────────────────────────────────
@@ -685,7 +712,6 @@ $(document).ready(function () {
   loadStats();
   loadLogs();
   loadProblems();
-  loadSystemPrompts();
 
   setInterval(() => { loadStats(); loadLogs(); }, 60000);
 
