@@ -628,6 +628,17 @@ async function wizardCopy() {
   }
 }
 
+function tryParseJson(raw) {
+  // Strip markdown code fences if present
+  let txt = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  try { return JSON.parse(txt); } catch(e) {}
+  // Attempt to repair common KI output issues:
+  //  - two concatenated arrays: "][" → ","
+  //  - missing separator between objects at array level: "}\s*{" → "},{"
+  const repaired = txt.replace(/\]\s*\[/g, ',').replace(/\}\s*\{/g, '},{');
+  return JSON.parse(repaired);
+}
+
 async function wizardImport() {
   const btn = document.getElementById('btnWizardImport');
   const errEl = document.getElementById('wizardImportError');
@@ -642,7 +653,7 @@ async function wizardImport() {
 
   let problems;
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = tryParseJson(raw);
     problems = Array.isArray(parsed) ? parsed : null;
     if (!problems) throw new Error('Kein JSON-Array');
   } catch(e) {
@@ -888,7 +899,9 @@ function renderProblemsTable(problems) {
   // Apply sort
   const sorted = [...filtered].sort((a, b) => {
     let va, vb;
-    if (probSortCol === 'severity') {
+    if (probSortCol === 'id') {
+      va = a.id; vb = b.id;
+    } else if (probSortCol === 'severity') {
       const order = {critical:0, warning:1, info:2};
       va = order[a.severity] ?? 3; vb = order[b.severity] ?? 3;
     } else if (probSortCol === 'status') {
@@ -938,6 +951,7 @@ function renderProblemsTable(problems) {
 
     rows += `
       <tr onclick="location.href='/problems/${p.id}'" style="border-left:3px solid ${border}">
+        <td style="color:var(--fb-muted);font-size:.7rem;font-family:Consolas,monospace">${p.id}</td>
         <td>${sev}</td>
         <td>
           <a href="/problems/${p.id}" class="text-decoration-none"
@@ -956,6 +970,7 @@ function renderProblemsTable(problems) {
       <table id="problemsTable" class="table table-dark table-hover table-sm mb-0">
         <thead>
           <tr>
+            <th style="width:2.5rem;cursor:pointer" onclick="probSortBy('id')">ID${sortIcon('id')}</th>
             <th style="width:2.5rem;cursor:pointer" onclick="probSortBy('severity')">Sev.${sortIcon('severity')}</th>
             <th style="cursor:pointer" onclick="probSortBy('title')">Titel${sortIcon('title')}</th>
             <th style="width:7.5rem;cursor:pointer" onclick="probSortBy('status')">Status${sortIcon('status')}</th>

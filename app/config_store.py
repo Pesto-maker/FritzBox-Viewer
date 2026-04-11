@@ -22,7 +22,7 @@ Bitte analysiere die Daten und:
 5. Beschreibungen und Kommentare können Markdown-Formatierung verwenden (Listen, Fettdruck, Code-Blöcke etc.), sofern das die Lesbarkeit verbessert.
 
 WICHTIG — Ausgabeformat:
-Antworte ausschließlich mit einem JSON-Array ohne Markdown-Blöcke oder Erklärungen,
+Antworte ausschließlich mit einem EINZIGEN gültigen JSON-Array ohne Markdown-Blöcke oder Erklärungen,
 damit deine Antwort direkt in den FritzBox Viewer importiert werden kann:
 [
   {
@@ -40,6 +40,12 @@ damit deine Antwort direkt in den FritzBox Viewer importiert werden kann:
     "ai_comment": "Optional: KI-Anmerkung zu diesem Problem"
   }
 ]
+JSON-Syntaxregeln (STRIKT einhalten):
+- Genau EIN umschließendes Array: beginnt mit `[` und endet mit `]`. Keine zwei aufeinanderfolgenden Arrays (kein `][`).
+- Zwischen zwei Problem-Objekten im Array MUSS ein Komma `,` stehen: `},{` — niemals `}{`.
+- Zwischen zwei Maßnahmen-Objekten innerhalb von `measures` MUSS ebenfalls ein Komma stehen.
+- Keine Trailing-Kommas nach dem letzten Element.
+- Alle Schlüssel und String-Werte in doppelten Anführungszeichen.
 Erlaubte severity-Werte: critical | warning | info
 Erlaubte category-Werte: internet | wifi | phone | security | system | mobile | info"""
 
@@ -93,6 +99,12 @@ damit deine Antwort direkt in den FritzBox Viewer importiert werden kann:
 Regeln zum "id"-Feld:
 - Wenn ein Problem bereits im Export mit [ID:xx] markiert ist, MUSS "id": xx in deiner Antwort stehen.
 - Nur für komplett neue Probleme das "id"-Feld weglassen.
+JSON-Syntaxregeln (STRIKT einhalten):
+- Genau EIN umschließendes Array: beginnt mit `[` und endet mit `]`. Keine zwei aufeinanderfolgenden Arrays (kein `][`).
+- Zwischen zwei Problem-Objekten im Array MUSS ein Komma `,` stehen: `},{` — niemals `}{`.
+- Zwischen zwei Maßnahmen-Objekten innerhalb von `measures` MUSS ebenfalls ein Komma stehen.
+- Keine Trailing-Kommas nach dem letzten Element.
+- Alle Schlüssel und String-Werte in doppelten Anführungszeichen.
 Erlaubte severity-Werte: critical | warning | info
 Erlaubte category-Werte: internet | wifi | phone | security | system | mobile | info"""
 

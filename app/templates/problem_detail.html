@@ -304,6 +304,7 @@ function renderProblem(p) {
       <div class="d-flex align-items-start flex-wrap gap-2 mb-2">
         ${sevBadge}${catBadge}
         ${statusBadge(p.status)}
+        <span class="badge" style="background:var(--fb-surface2);color:var(--fb-muted);border:1px solid var(--fb-border);font-family:Consolas,monospace">ID:${p.id}</span>
         <span style="font-size:.8rem;color:var(--fb-muted);margin-left:auto">${date}</span>
       </div>
       <h2 style="font-size:1.15rem;font-weight:700;color:var(--fb-text);margin-bottom:.75rem">${escHtml(p.title)}</h2>
@@ -336,6 +337,7 @@ function renderProblem(p) {
           <i class="bi bi-arrow-right-short" style="color:var(--fb-muted);font-size:1.1rem"></i>
           <span style="font-size:.9rem;font-weight:600;flex:1">${escHtml(m.title)}</span>
           ${statusBadge(m.status)}
+          <span class="badge" style="background:var(--fb-bg);color:var(--fb-muted);border:1px solid var(--fb-border);font-family:Consolas,monospace;font-size:.7rem">ID:${m.id}</span>
         </div>
         <div class="md-content" style="color:#b0b8d8;font-size:.88rem">${md(m.description)}</div>
         ${renderComments(m.comments, 'measure', m.id)}

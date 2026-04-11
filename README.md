@@ -5,20 +5,19 @@ Web-Anwendung zur Anzeige und KI-gestützten Analyse des Ereignisprotokolls eine
 ## Features
 
 - Automatischer, konfigurierbarer Abruf des FritzBox-Ereignislogs (TR-064 + HTTPS-API)
-- Persistente Speicherung in SQLite (keine Duplikate)
+- Persistente Speicherung in SQLite
 - Dark-Theme-Oberfläche mit sortierbarer und filterbarer Logtabelle
 - Kategorisierung der Einträge (Fehler, Warnung, Internet, WLAN, Telefon, Mobile, System, Sicherheit)
-- KI-gestützte Analyse der Logs mit Anthropic Claude (identifiziert Probleme, schlägt Maßnahmen vor)
+- KI-gestützte Analyse — direkt per API-Key oder über einen geführten Assistenten für jeden beliebigen Chat-KI-Dienst (ohne API-Key)
 - Zweistufige Problemverwaltung: Probleme → Maßnahmen mit Status-Workflow
 - Kommentarfunktion mit Markdown-Unterstützung
-- Vollständiger Export (Logs + Probleme + Maßnahmen) für manuelle KI-Analyse im Browser
-- Alle Einstellungen werden über die Admin-Oberfläche im Browser konfiguriert
+- Löschen von Problemen, Maßnahmen und Kommentaren
 
 ## Deployment
 
-### Option A — Windows-Exe (empfohlen für Weitergabe)
+### Option A — Windows-Exe
 
-Kein Python erforderlich. Den `dist/FritzBox-Viewer/`-Ordner als ZIP weitergeben, entpacken und `FritzBox-Viewer.exe` starten.
+ZIP entpacken und `FritzBox-Viewer.exe` starten.
 
 **Selbst bauen** (einmalig, Python + venv muss installiert sein):
 ```
@@ -36,18 +35,6 @@ python run.py
 python run.py --debug
 ```
 
-### Option C — Docker
-
-Voraussetzung: FritzBox per IP-Adresse erreichbar (statt `fritz.box`-Hostname).
-
-```bash
-docker build -t fritzbox-viewer .
-docker run -p 8000:8000 -v ./data:/app/data fritzbox-viewer
-```
-
-> Eine `Dockerfile` ist noch nicht enthalten — bei Bedarf ergänzen.
-
----
 
 ## Voraussetzungen (Python-Variante)
 
@@ -102,38 +89,35 @@ Optional: `python run.py --debug` für ausführliche Log-Ausgaben.
 
 ## Erstkonfiguration
 
-Beim ersten Start öffnet die App automatisch die **Admin-Seite** der Anwendung (zu erreichen über die Navigation oder direkt unter `http://localhost:8000/admin`). Dort bitte die Verbindungsdaten zur FritzBox eintragen:
+Beim ersten Start öffnet die App automatisch die **Admin-Seite** der Anwendung. Dort bitte die Verbindungsdaten zur FritzBox eintragen:
 
 - **Host / IP-Adresse** der FritzBox (Standard: `fritz.box`)
 - **Benutzername** und **Passwort**
-- **Abrufintervall** in Sekunden
-
-Für die KI-Analyse zusätzlich den **Anthropic API-Key** hinterlegen (erhältlich unter [console.anthropic.com](https://console.anthropic.com)).
-
-Alle Einstellungen werden in der lokalen SQLite-Datenbank gespeichert — keine Konfigurationsdateien erforderlich. Solange keine Zugangsdaten hinterlegt sind, wird der FritzBox-Abruf automatisch pausiert.
+- **Abrufintervall** in Sekunden (Default: 300)
 
 ## Analysevarianten
 
 Der FritzBox Viewer unterstützt drei Wege, um aus den Logs Probleme und Maßnahmen zu erarbeiten. Die Varianten lassen sich auch kombinieren.
 
-### 1. Export + manuelle KI-Analyse (kein API-Key erforderlich)
+### 1. Direkte KI-Analyse (Anthropic API-Key hinterlegt)
 
-Die gesammelten Logs sowie alle bereits erfassten Probleme und Maßnahmen lassen sich als strukturierte Textdatei exportieren. Diese Datei kann in einen beliebigen KI-Chat (z. B. Claude.ai, ChatGPT) hochgeladen werden.
+Ist unter **Admin → KI-Einstellungen** ein Anthropic API-Key eingetragen, läuft die Analyse vollständig im Viewer.
 
-- **Logs exportieren** — enthält nur die Rohlogs; geeignet für eine Erstanalyse
-- **Vollständig exportieren** — enthält Logs, Probleme, Maßnahmen und deren Status; ideal für Folgeanalysen, da die KI bereits bearbeitete Themen berücksichtigen kann
+- Auf der Hauptseite rechts **"KI-Analyse"** klicken
+- Claude wertet die letzten Logeinträge plus den aktuellen Problemstatus aus
+- Neue Probleme und Maßnahmen erscheinen automatisch in der Tabelle
 
-Jeder Export-Button zeigt auf Wunsch den passenden **Systemprompt** an, der der KI erklärt, wie sie die Daten interpretieren und in welchem Format sie antworten soll. KI-Antworten können anschließend per **"KI-Import"** direkt in den Viewer übernommen werden.
+Folgeanalysen referenzieren bereits existierende Probleme per ID, sodass keine Duplikate entstehen. Kommentare und Status (offen / in Prüfung / erfolgreich / nicht erfolgreich / abgelehnt) werden als Kontext mitgegeben.
 
-### 2. Direkte KI-Analyse über Anthropic API
+### 2. Geführter Assistent für externe KI-Chats (kein API-Key)
 
-Mit einem Anthropic API-Key wird die Analyse vollständig im Viewer durchgeführt — kein manueller Export nötig.
+Ohne API-Key öffnet ein Klick auf **"KI-Analyse"** einen **3-Schritt-Assistenten**:
 
-- API-Key unter **Admin → KI-Einstellungen** hinterlegen
-- Auf der Hauptseite **"KI-Analyse starten"** klicken
-- Probleme und Maßnahmen erscheinen automatisch in der Tabelle
+1. **Kopieren** — der Assistent legt Systemprompt, Logs und bestehende Probleme in einem Textblock in der Zwischenablage ab. Bei sehr großen Exporten lässt sich die Log-Anzahl reduzieren
+2. **Einfügen & Senden** — den Text in einen beliebigen KI-Chat (Mistral.ai, Claude.ai, ChatGPT, Gemini …) einfügen und abschicken
+3. **Antwort importieren** — die JSON-Antwort der KI zurück in den Assistenten einfügen; der Viewer übernimmt neue Probleme und aktualisiert bestehende
 
-Der Systemprompt ist über die Admin-Seite anpassbar. Folgeanalysen berücksichtigen automatisch bereits bearbeitete, abgelehnte oder erfolgreich umgesetzte Probleme.
+Es werden keine Dateien heruntergeladen — alles läuft über die Zwischenablage.
 
 ### 3. Manuelle Erfassung
 
@@ -186,10 +170,14 @@ FritzBox-Viewer/
 | GET     | `/api/logs`                  | Log-Einträge (JSON, filterbar)            |
 | GET     | `/api/stats`                 | Statistiken und Fetch-Status              |
 | POST    | `/api/fetch`                 | Manuellen Log-Abruf auslösen             |
-| POST    | `/api/ai/analyze`            | KI-Analyse starten                        |
-| GET     | `/api/ai/problems`           | Alle Probleme mit Maßnahmen              |
+| POST    | `/api/ai/analyze`            | Direkte KI-Analyse starten (benötigt API-Key) |
+| POST    | `/api/ai/import`             | JSON-Antwort aus externem KI-Chat importieren |
+| GET     | `/api/ai/problems`           | Alle Probleme mit Maßnahmen               |
 | PATCH   | `/api/ai/problems/{id}`      | Problem-Status / Kommentar setzen         |
+| DELETE  | `/api/ai/problems/{id}`      | Problem löschen (kaskadiert Maßnahmen + Kommentare) |
 | PATCH   | `/api/ai/measures/{id}`      | Maßnahmen-Status / Kommentar setzen       |
+| DELETE  | `/api/ai/measures/{id}`      | Maßnahme löschen (kaskadiert Kommentare)  |
+| GET     | `/api/export/clipboard`      | Assistenten-Text (Systemprompt + Logs + offene Probleme) |
 | GET     | `/api/export/logs`           | Log-Export als Textdatei                  |
 | GET     | `/api/export/full`           | Vollexport (Logs + Probleme + Maßnahmen)  |
 | POST    | `/api/admin/config`          | Konfiguration speichern                   |

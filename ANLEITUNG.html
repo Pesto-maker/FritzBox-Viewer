@@ -213,7 +213,7 @@
 
     <li class="section">Weitere Funktionen</li>
     <li><a href="#kommentare">Kommentare &amp; Markdown</a></li>
-    <li><a href="#export">Export &amp; Import</a></li>
+    <li><a href="#export">KI-Assistent</a></li>
     <li><a href="#manuell">Manuelles Problem</a></li>
 
     <li class="section">Referenz</li>
@@ -227,7 +227,7 @@
 <main>
 
   <h1>FritzBox Viewer</h1>
-  <p class="subtitle">Anleitung · Version 1.0</p>
+  <p class="subtitle">Anleitung · Version 1.1</p>
 
   <!-- ── Übersicht ── -->
   <section id="uebersicht">
@@ -249,10 +249,9 @@
       <tr><th>Funktion</th><th>Beschreibung</th></tr>
       <tr><td>Protokoll-Abruf</td><td>Automatischer und manueller Abruf der FritzBox-Ereignisse über TR-064</td></tr>
       <tr><td>Übersicht &amp; Filter</td><td>Logs nach Kategorie filtern, durchsuchen, sortieren</td></tr>
-      <tr><td>KI-Analyse</td><td>Claude analysiert die letzten 400 Einträge und findet Auffälligkeiten</td></tr>
+      <tr><td>KI-Analyse</td><td>KI analysiert die Einträge und findet Auffälligkeiten</td></tr>
       <tr><td>Problemverwaltung</td><td>Probleme und Maßnahmen mit Status und Kommentaren verwalten</td></tr>
-      <tr><td>Export</td><td>Logs oder vollständige Probleme/Maßnahmen als Textdatei exportieren</td></tr>
-      <tr><td>Import</td><td>KI-Chat-Antworten direkt zurück in die App importieren</td></tr>
+      <tr><td>Löschen</td><td>Probleme, Maßnahmen und Kommentare einzeln löschen — Problem löscht kaskadiert alle Maßnahmen und Kommentare</td></tr>
     </table>
   </section>
 
@@ -262,6 +261,7 @@
 
     <h3>Software</h3>
     <ul class="steps">
+      <li><strong>Windows</strong> — bei der Verwendung der EXE</li>
       <li><strong>Python 3.11 oder neuer</strong> — <a href="https://www.python.org/downloads/">python.org/downloads</a></li>
       <li><strong>Pip-Abhängigkeiten</strong> — manuell installieren via <code>pip install -r requirements.txt</code> (nur für den Python-Start; bei der Exe-Variante nicht nötig)</li>
     </ul>
@@ -455,12 +455,8 @@
         <rect x="20" y="140" width="360" height="380" rx="10" fill="#151929" stroke="#2a2f4a"/>
         <!-- toolbar -->
         <text x="34" y="163" font-size="10" font-weight="700" fill="#6ee7f7" letter-spacing="1">📋 PROTOKOLL</text>
-        <rect x="130" y="150" width="58" height="20" rx="4" fill="none" stroke="#4f6ef7"/>
-        <text x="138" y="164" font-size="9" fill="#818cf8">↻ Abrufen</text>
-        <rect x="192" y="150" width="82" height="20" rx="4" fill="none" stroke="#d0d6f0"/>
-        <text x="200" y="164" font-size="9" fill="#d0d6f0">⬇ Logs herunter.</text>
-        <rect x="278" y="150" width="90" height="20" rx="4" fill="none" stroke="#22d3ee"/>
-        <text x="286" y="164" font-size="9" fill="#22d3ee">📋 Systemprompt</text>
+        <rect x="300" y="150" width="66" height="20" rx="4" fill="none" stroke="#4f6ef7"/>
+        <text x="310" y="164" font-size="9" fill="#818cf8">↻ Abrufen</text>
         <line x1="34" y1="178" x2="366" y2="178" stroke="#2a2f4a"/>
 
         <!-- filter chips -->
@@ -532,16 +528,10 @@
         <!-- Right panel: Problems -->
         <rect x="404" y="140" width="476" height="380" rx="10" fill="#151929" stroke="#2a2f4a"/>
         <text x="418" y="163" font-size="10" font-weight="700" fill="#6ee7f7" letter-spacing="1">🤖 PROBLEME &amp; MAẞNAHMEN</text>
-        <rect x="596" y="150" width="72" height="20" rx="4" fill="none" stroke="#22d3ee"/>
-        <text x="604" y="164" font-size="9" fill="#22d3ee">🤖 KI-Analyse</text>
-        <rect x="672" y="150" width="42" height="20" rx="4" fill="none" stroke="#22c55e"/>
-        <text x="682" y="164" font-size="9" fill="#22c55e">+ Neu</text>
-        <rect x="718" y="150" width="64" height="20" rx="4" fill="none" stroke="#d0d6f0"/>
-        <text x="725" y="164" font-size="9" fill="#d0d6f0">⬇ Vollexport</text>
-        <rect x="786" y="150" width="52" height="20" rx="4" fill="none" stroke="#6b728e"/>
-        <text x="794" y="164" font-size="9" fill="#d0d6f0">⬆ Import</text>
-        <rect x="842" y="150" width="34" height="20" rx="4" fill="none" stroke="#22d3ee"/>
-        <text x="847" y="164" font-size="9" fill="#22d3ee">📋 P</text>
+        <rect x="736" y="150" width="78" height="20" rx="4" fill="none" stroke="#22d3ee"/>
+        <text x="744" y="164" font-size="9" fill="#22d3ee">🤖 KI-Analyse</text>
+        <rect x="818" y="150" width="46" height="20" rx="4" fill="none" stroke="#22c55e"/>
+        <text x="828" y="164" font-size="9" fill="#22c55e">+ Neu</text>
         <line x1="418" y1="178" x2="864" y2="178" stroke="#2a2f4a"/>
 
         <!-- filter + search -->
@@ -630,8 +620,6 @@
     <table>
       <tr><th>Schaltfläche</th><th>Funktion</th></tr>
       <tr><td><strong>Abrufen</strong></td><td>Sofortiger manueller Abruf der aktuellen FritzBox-Logs</td></tr>
-      <tr><td><strong>Logs herunterladen</strong></td><td>Exportiert alle Logs als <code>.txt</code>-Datei</td></tr>
-      <tr><td><strong>Systemprompt</strong></td><td>Öffnet einen vorgefertigten Prompt zum Kopieren für den manuellen KI-Chat-Workflow</td></tr>
     </table>
 
     <h3>Kategoriefilter</h3>
@@ -660,27 +648,34 @@
 
     <table>
       <tr><th>Schaltfläche</th><th>Funktion</th></tr>
-      <tr><td><strong>KI-Analyse</strong></td><td>Sendet die letzten 400 Logeinträge plus den bisherigen Problemstatus an Claude und speichert neue Probleme/Maßnahmen</td></tr>
+      <tr><td><strong>KI-Analyse</strong></td><td>Intelligenter Button: Ist ein Anthropic API-Key hinterlegt, wird die Analyse direkt in der App über die Anthropic API durchgeführt. Ohne API-Key öffnet sich der 3-Schritt-Assistent für externe KI-Chats.</td></tr>
       <tr><td><strong>Neu</strong></td><td>Problem manuell anlegen (ohne KI)</td></tr>
-      <tr><td><strong>Vollexport</strong></td><td>Exportiert Logs + alle Probleme/Maßnahmen als <code>.txt</code> und öffnet automatisch den Systemprompt für den Import-Workflow</td></tr>
-      <tr><td><strong>Import</strong></td><td>JSON-Antwort aus KI-Chat direkt importieren</td></tr>
-      <tr><td><strong>Prompt</strong></td><td>Systemprompt für den Vollexport-Workflow anzeigen und kopieren</td></tr>
     </table>
 
-    <h3>Manueller KI-Chat-Workflow</h3>
-    <p>Für den Fall, dass kein API-Key vorhanden ist oder eine andere KI verwendet werden soll:</p>
+    <h3>Direkte Analyse (mit API-Key)</h3>
+    <p>Ist unter <em>Admin → KI-Einstellungen</em> ein Anthropic API-Key hinterlegt, wertet Claude nach einem Klick auf <strong>KI-Analyse</strong> automatisch die letzten Logeinträge plus den aktuellen Problemstatus aus. Neue Probleme und Maßnahmen landen direkt in der Tabelle — kein manueller Kopieren/Einfügen-Schritt nötig.</p>
+
+    <h3>Assistent für externe KI-Chats (ohne API-Key)</h3>
+    <p>Ohne API-Key öffnet der Button <strong>KI-Analyse</strong> einen geführten 3-Schritt-Assistenten, der komplett über die Zwischenablage arbeitet — es werden keine Dateien heruntergeladen.</p>
     <ol class="steps">
-      <li>Auf <strong>Vollexport</strong> klicken — Datei wird heruntergeladen, Systemprompt-Modal öffnet sich automatisch</li>
-      <li>Systemprompt kopieren und in den KI-Chat (z.B. Claude.ai) einfügen</li>
-      <li>Die heruntergeladene Exportdatei in den Chat hochladen</li>
-      <li>Antwort des KI-Chats (JSON-Array) kopieren</li>
-      <li>In der App auf <strong>Import</strong> klicken und die Antwort einfügen</li>
+      <li><strong>Kopieren</strong> — der Assistent legt Systemprompt, Logs und alle offenen/in-Prüfung Probleme gemeinsam in der Zwischenablage ab. Bestehende Probleme werden mit <code>[ID:xx]</code> markiert, damit die KI sie bei ihrer Antwort referenzieren kann. Ist der Export zu groß für das gewählte KI-Chat-Limit, lässt sich die Anzahl der mitgeschickten Logeinträge reduzieren.</li>
+      <li><strong>Einfügen &amp; Senden</strong> — den Text in einen beliebigen KI-Chat (Claude.ai, ChatGPT, Gemini, …) einfügen und abschicken. Der Systemprompt erklärt der KI, was sie analysieren und in welchem JSON-Format sie antworten soll.</li>
+      <li><strong>Antwort importieren</strong> — die JSON-Antwort der KI zurück in das Importfeld des Assistenten einfügen und auf <strong>Importieren</strong> klicken. Der Viewer erkennt bestehende Probleme anhand ihrer ID und ergänzt nur neue Probleme, Maßnahmen und Kommentare.</li>
     </ol>
 
     <div class="callout tip">
       <span class="callout-icon">💡</span>
-      <div>Der Systemprompt enthält bereits das genaue JSON-Ausgabeformat, sodass die KI-Antwort direkt importiert werden kann.</div>
+      <div>Der Assistent sanft tolerante kleinere Formatfehler in der KI-Antwort (z.B. fehlende Kommas zwischen Objekten oder Markdown-Code-Fences). Bei gravierenden JSON-Fehlern kann die Antwort manuell bereinigt und erneut eingefügt werden.</div>
     </div>
+
+    <h3>Problem- und Maßnahmen-IDs</h3>
+    <p>
+      Jedes Problem und jede Maßnahme erhält beim Anlegen eine eindeutige numerische ID.
+      Sie ist in der Problemtabelle (Spalte <strong>ID</strong>) und auf der Detailseite
+      als Badge sichtbar. Diese ID wird vom Assistenten im Export verwendet
+      (<code>[ID:xx]</code>), damit die KI bei Folgeanalysen gezielt bestehende Probleme
+      ergänzen kann, statt Duplikate anzulegen.
+    </p>
   </section>
 
   <!-- ── Problemtabelle ── -->
@@ -690,6 +685,7 @@
     <p>Die Tabelle zeigt alle erfassten Probleme mit folgenden Spalten:</p>
     <table>
       <tr><th>Spalte</th><th>Bedeutung</th></tr>
+      <tr><td><strong>ID</strong></td><td>Eindeutige Problem-ID — wird vom KI-Assistenten als Referenz verwendet, um Duplikate zu vermeiden</td></tr>
       <tr><td><strong>Sev.</strong></td><td>Schweregrad: <span class="badge badge-critical">KRIT</span> <span class="badge badge-warning">WARN</span> <span class="badge badge-info">INFO</span></td></tr>
       <tr><td><strong>Titel</strong></td><td>Klickbar — öffnet die Detailseite. Darunter die Kategorie-Badge.</td></tr>
       <tr><td><strong>Status</strong></td><td>Aktueller Bearbeitungsstand (siehe Statusworkflow)</td></tr>
@@ -785,10 +781,12 @@
     <p>Die Detailseite zeigt:</p>
     <ul style="margin: .5rem 0 .75rem 1.25rem;">
       <li>Vollständige Problembeschreibung (Markdown gerendert)</li>
+      <li>Problem-<strong>ID</strong> als Badge neben Schweregrad und Status</li>
       <li>Kommentarthread unter dem Problem</li>
-      <li>Status-Schaltflächen für das Problem</li>
-      <li>Alle zugehörigen Maßnahmen, jeweils mit Beschreibung, Kommentarthread und Status-Schaltflächen</li>
+      <li>Status-Schaltflächen für das Problem plus <strong>Problem löschen</strong> (kaskadiert auf Maßnahmen und Kommentare)</li>
+      <li>Alle zugehörigen Maßnahmen, jeweils mit ID-Badge, Beschreibung, Kommentarthread, Status-Schaltflächen und eigenem <strong>Löschen</strong>-Button</li>
     </ul>
+    <p>Einzelne Kommentare lassen sich über das Papierkorb-Symbol rechts neben dem jeweiligen Eintrag entfernen.</p>
     <p>Mit dem <strong>← Zurück</strong>-Button in der Kopfzeile gelangt man zurück zur Hauptseite.</p>
   </section>
 
@@ -883,32 +881,63 @@
     </ul>
   </section>
 
-  <!-- ── Export & Import ── -->
+  <!-- ── KI-Assistent ── -->
   <section id="export">
-    <h2><span class="icon">📤</span>Export &amp; Import</h2>
+    <h2><span class="icon">📋</span>KI-Assistent (Zwischenablage-Workflow)</h2>
 
-    <h3>Logs-Export</h3>
-    <p>Toolbar links → <strong>Logs herunterladen</strong>: Exportiert alle gespeicherten Logeinträge als chronologische Textdatei (<code>fritzbox_logs_YYYYMMDD_HHmm.txt</code>).</p>
+    <p>Ist <em>kein</em> Anthropic API-Key hinterlegt, öffnet der Button <strong>KI-Analyse</strong> einen 3-Schritt-Assistenten, der komplett über die Zwischenablage funktioniert.</p>
 
-    <h3>Vollexport</h3>
-    <p>Toolbar rechts → <strong>Vollexport</strong>: Exportiert Logs <em>und</em> alle Probleme/Maßnahmen mit Status und Kommentaren. Dateiname: <code>fritzbox_vollexport_YYYYMMDD_HHmm.txt</code></p>
-    <p>Nach dem Download öffnet sich automatisch das Systemprompt-Modal für den Chat-Workflow.</p>
+    <h3>Schritt 1 — In Zwischenablage kopieren</h3>
+    <p>
+      Der Assistent stellt einen Textblock zusammen, der den Systemprompt, die letzten Logeinträge
+      (Standard: 400) und alle offenen/in-Prüfung Probleme enthält. Bestehende Probleme und Maßnahmen
+      sind mit <code>[ID:xx]</code> markiert, damit die KI sie bei ihrer Antwort referenzieren kann.
+      Ein Klick auf <strong>Kopieren</strong> legt den Text in der Zwischenablage ab.
+    </p>
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      <div>Ist der Text für das Kontextfenster des gewählten KI-Chats zu groß, lässt sich die Anzahl der mitgeschickten Logeinträge per Eingabefeld reduzieren.</div>
+    </div>
 
-    <h3>Import aus KI-Chat</h3>
-    <p>Toolbar rechts → <strong>Import</strong>: Öffnet ein Modal zum Einfügen einer JSON-Antwort aus dem KI-Chat. Das erwartete Format:</p>
+    <h3>Schritt 2 — In KI-Chat einfügen und senden</h3>
+    <p>Den kopierten Text in einen beliebigen KI-Chat einfügen (z.B. <a href="https://claude.ai">claude.ai</a>, <a href="https://chat.openai.com">ChatGPT</a>, <a href="https://gemini.google.com">Gemini</a>). Der Systemprompt erklärt der KI, welche Analyse sie durchführen soll und in welchem JSON-Format sie antworten muss.</p>
+
+    <h3>Schritt 3 — Antwort zurück importieren</h3>
+    <p>Die JSON-Antwort der KI markieren, kopieren und in das Importfeld im Assistenten einfügen. Nach einem Klick auf <strong>Importieren</strong> übernimmt der Viewer:</p>
+    <ul style="margin: .5rem 0 .75rem 1.25rem;">
+      <li><strong>Neue Probleme</strong> (ohne <code>id</code>-Feld) — werden angelegt</li>
+      <li><strong>Bestehende Probleme</strong> (mit <code>id</code>-Feld) — werden um neue Maßnahmen und Kommentare ergänzt, ohne Duplikate anzulegen</li>
+      <li><strong>Neue KI-Kommentare</strong> — werden als orange markierte „KI-Neu"-Einträge angezeigt, bis sie gelesen werden</li>
+    </ul>
+
+    <p>Erwartetes JSON-Format der KI-Antwort:</p>
     <pre><code>[
   {
-    "title": "Kurzer Problemtitel",
-    "description": "Detaillierte Beschreibung.",
+    "id": 42,
+    "title": "Bereits existierendes Problem",
+    "description": "Kommentar zum bestehenden Problem…",
     "severity": "warning",
     "category": "security",
+    "measures": [],
+    "ai_comment": "Zusätzliche KI-Anmerkung"
+  },
+  {
+    "title": "Neues Problem ohne id-Feld",
+    "description": "Detaillierte Beschreibung.",
+    "severity": "critical",
+    "category": "security",
     "measures": [
-      { "title": "Maßnahme 1", "description": "Konkrete Schritte..." }
+      { "title": "Maßnahme 1", "description": "Konkrete Schritte…" }
     ]
   }
 ]</code></pre>
     <p>Erlaubte Werte für <code>severity</code>: <code>critical</code>, <code>warning</code>, <code>info</code></p>
     <p>Erlaubte Werte für <code>category</code>: <code>internet</code>, <code>wifi</code>, <code>phone</code>, <code>security</code>, <code>system</code>, <code>mobile</code>, <code>info</code></p>
+
+    <div class="callout tip">
+      <span class="callout-icon">🔧</span>
+      <div>Der Import toleriert einige typische Formatfehler: Markdown-Code-Fences (<code>```json … ```</code>) werden entfernt, und fehlende Kommas zwischen Objekten (<code>}{</code>) bzw. zwei aufeinanderfolgende Arrays (<code>][</code>) werden repariert.</div>
+    </div>
   </section>
 
   <!-- ── Manuelles Problem ── -->
@@ -989,8 +1018,8 @@
       <li>Mindestens ein Logeintrag muss vorhanden sein</li>
     </ul>
 
-    <h3>Import schlägt fehl</h3>
-    <p>Die eingefügte JSON-Antwort muss ein gültiges JSON-Array sein. Häufige Ursache: Die KI hat Markdown-Blöcke (<code>```json ... ```</code>) um die Antwort gesetzt. Diese müssen vor dem Import entfernt werden.</p>
+    <h3>Import im Assistenten schlägt fehl</h3>
+    <p>Die eingefügte KI-Antwort muss ein gültiges JSON-Array sein. Markdown-Code-Fences (<code>```json … ```</code>) und fehlende Kommas zwischen Objekten (<code>}{</code>, <code>][</code>) werden automatisch repariert. Bei weiteren Syntaxfehlern die Antwort manuell bereinigen und erneut einfügen — die Fehlermeldung nennt die Position im Text.</p>
 
     <div class="callout danger">
       <span class="callout-icon">⛔</span>
