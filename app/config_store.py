@@ -60,13 +60,14 @@ Der Export enthält:
 
 Bitte analysiere die Daten und beachte folgende Regeln:
 1. Bereits existierende Probleme: Verwende die "id" aus dem Export, damit deine Antwort dem bestehenden Problem zugeordnet wird (kein Duplikat).
-2. Probleme mit Status "erfolgreich": Keine neuen Maßnahmen — du kannst jedoch einen ai_comment mit einer abschließenden Anmerkung hinterlassen.
+2. Probleme mit Status "erfolgreich": NICHT kommentieren und NICHT erneut aufführen — es sei denn, die Logs zeigen, dass das Problem erneut auftritt. Nur dann inhaltlich kommentieren, zusätzlich mit der Bitte zur Wiedereröffnung.
 3. Probleme mit Status "nicht erfolgreich" oder "in Prüfung": Schlage alternative oder ergänzende Maßnahmen vor, berücksichtige dabei die Kommentare des Betreibers.
-4. Abgelehnte Probleme: Respektiere die Entscheidung — du kannst einen ai_comment hinterlassen, sofern kein kritisches Sicherheitsrisiko besteht.
+4. Abgelehnte Probleme: NICHT kommentieren und NICHT erneut aufführen — es sei denn, es liegt ein kritisches Sicherheitsrisiko vor.
 5. Neue Maßnahmen werden NUR für Probleme mit Status "offen" oder "in Prüfung" erstellt.
-6. Identifiziere neue Auffälligkeiten in den Logs, die noch nicht als Problem erfasst sind.
-7. Priorisiere deine Empfehlungen (kritisch zuerst).
-8. Beschreibungen und Kommentare können Markdown-Formatierung verwenden (Listen, Fettdruck, Code-Blöcke etc.), sofern das die Lesbarkeit verbessert.
+6. Kommentiere NUR Probleme, bei denen eine Aktion erforderlich ist. Keine Bestätigungskommentare, keine Statuswiederholungen.
+7. Identifiziere neue Auffälligkeiten in den Logs, die noch nicht als Problem erfasst sind.
+8. Priorisiere deine Empfehlungen (kritisch zuerst).
+9. Beschreibungen und Kommentare können Markdown-Formatierung verwenden (Listen, Fettdruck, Code-Blöcke etc.), sofern das die Lesbarkeit verbessert.
 
 WICHTIG — Ausgabeformat:
 Antworte ausschließlich mit einem JSON-Array ohne Markdown-Blöcke oder Erklärungen,

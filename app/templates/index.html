@@ -48,8 +48,11 @@
     .stat-card {
       background: var(--fb-surface); border: 1px solid var(--fb-border);
       border-radius: 0.6rem; padding: 0.75rem 1rem; text-align: center; transition: border-color .2s;
+      min-width: 7rem;
     }
     .stat-card:hover { border-color: var(--fb-accent); }
+    .btn-outline-check { color: #fbbf24; border-color: #fbbf24; }
+    .btn-outline-check:hover, .btn-outline-check.active { color: #000; background: #fbbf24; border-color: #fbbf24; }
     .stat-card .value { font-size: 1.6rem; font-weight: 700; color: var(--fb-accent2); }
     .stat-card .label { font-size: 0.72rem; color: var(--fb-muted); text-transform: uppercase; letter-spacing: .06em; }
 
@@ -223,25 +226,14 @@
 <main class="container-fluid p-3 p-md-4">
 
   <!-- Stat cards -->
-  <div class="row g-2 mb-3">
-    <div class="col-6 col-sm-4 col-md-2">
-      <div class="stat-card"><div class="value" id="statTotal">—</div><div class="label">Gesamt</div></div>
-    </div>
-    <div class="col-6 col-sm-4 col-md-2">
-      <div class="stat-card"><div class="value text-danger" id="statError">—</div><div class="label">Fehler</div></div>
-    </div>
-    <div class="col-6 col-sm-4 col-md-2">
-      <div class="stat-card"><div class="value text-warning" id="statWarning">—</div><div class="label">Warnungen</div></div>
-    </div>
-    <div class="col-6 col-sm-4 col-md-2">
-      <div class="stat-card"><div class="value" style="color:#818cf8" id="statInternet">—</div><div class="label">Internet</div></div>
-    </div>
-    <div class="col-6 col-sm-4 col-md-2">
-      <div class="stat-card"><div class="value" style="color:#22d3ee" id="statWifi">—</div><div class="label">WLAN</div></div>
-    </div>
-    <div class="col-6 col-sm-4 col-md-2">
-      <div class="stat-card"><div class="value" style="color:#4ade80" id="statOther">—</div><div class="label">Sonstige</div></div>
-    </div>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="stat-card flex-fill"><div class="value" id="statTotal">—</div><div class="label">Gesamt</div></div>
+    <div class="stat-card flex-fill"><div class="value text-danger" id="statError">—</div><div class="label">Fehler</div></div>
+    <div class="stat-card flex-fill"><div class="value text-warning" id="statWarning">—</div><div class="label">Warnungen</div></div>
+    <div class="stat-card flex-fill"><div class="value" style="color:#818cf8" id="statInternet">—</div><div class="label">Internet</div></div>
+    <div class="stat-card flex-fill"><div class="value" style="color:#22d3ee" id="statWifi">—</div><div class="label">WLAN</div></div>
+    <div class="stat-card flex-fill"><div class="value" style="color:#4ade80" id="statOther">—</div><div class="label">Sonstige</div></div>
+    <div class="stat-card flex-fill"><div class="value" style="color:#f59e0b" id="statOpenProblems">—</div><div class="label">Offene Probleme</div></div>
   </div>
 
   <!-- Error alert -->
@@ -323,7 +315,7 @@
           <div class="d-flex gap-1">
             <button class="btn btn-sm btn-secondary active" id="pfAll"    onclick="setProbFilter('all')">Alle</button>
             <button class="btn btn-sm btn-outline-primary"  id="pfOpen"   onclick="setProbFilter('open')">Offen</button>
-            <button class="btn btn-sm btn-outline-warning"  id="pfCheck"  onclick="setProbFilter('check')" style="color:#fbbf24;border-color:#fbbf24">In Prüfung</button>
+            <button class="btn btn-sm btn-outline-check"  id="pfCheck"  onclick="setProbFilter('check')">In Prüfung</button>
           </div>
           <input type="text" id="probSearch" placeholder="Suche…"
                  class="form-control form-control-sm ms-auto"
@@ -761,6 +753,7 @@ async function loadStats() {
       - (json.by_category?.error ?? 0) - (json.by_category?.warning ?? 0)
       - (json.by_category?.internet ?? 0) - (json.by_category?.wifi ?? 0);
     document.getElementById('statOther').textContent = Math.max(0, other);
+    document.getElementById('statOpenProblems').textContent = json.open_problems ?? 0;
     const dot = document.getElementById('statusDot');
     const txt = document.getElementById('statusText');
     if (json.last_error) {
@@ -825,14 +818,14 @@ function setProbFilter(f) {
   probFilter = f;
   ['pfAll','pfOpen','pfCheck'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) { el.classList.remove('active','btn-secondary','btn-outline-primary','btn-outline-warning'); }
+    if (el) { el.classList.remove('active','btn-secondary','btn-outline-primary','btn-outline-check'); }
   });
   const map = { all:'pfAll', open:'pfOpen', check:'pfCheck' };
   const activeEl = document.getElementById(map[f]);
   if (activeEl) {
     if (f === 'all')   { activeEl.classList.add('active','btn-secondary'); }
     if (f === 'open')  { activeEl.classList.add('active','btn-outline-primary'); }
-    if (f === 'check') { activeEl.classList.add('active','btn-outline-warning'); }
+    if (f === 'check') { activeEl.classList.add('active','btn-outline-check'); }
   }
   renderProblemsTable(cachedProblems);
 }

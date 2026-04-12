@@ -155,7 +155,7 @@ def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict,
             return out
 
         if success:
-            prev_section += "\n**Erfolgreich umgesetzt — keine neuen Maßnahmen, ai_comment möglich:**\n"
+            prev_section += "\n**Erfolgreich umgesetzt — NICHT kommentieren, NICHT erneut aufführen (nur bei erneutem Auftreten kommentieren):**\n"
             prev_section += "\n".join(fmt_problem(p) for p in success) + "\n"
 
         if failed:
@@ -163,7 +163,7 @@ def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict,
             prev_section += "\n".join(fmt_problem(p) for p in failed) + "\n"
 
         if rejected:
-            prev_section += "\n**Abgelehnt — keine neuen Maßnahmen außer bei kritischem Risiko, ai_comment möglich:**\n"
+            prev_section += "\n**Abgelehnt — NICHT kommentieren, NICHT erneut aufführen (nur bei kritischem Sicherheitsrisiko):**\n"
             prev_section += "\n".join(fmt_problem(p) for p in rejected) + "\n"
 
         if pending:
@@ -179,6 +179,7 @@ def _build_prompt(logs: list, prev_problems: list, measures_by_problem: dict,
 {log_lines}
 
 Erstelle 3–7 priorisierte Probleme (critical zuerst), jeweils mit 1–3 Maßnahmen.
+Erfolgreich umgesetzte und abgelehnte Probleme NICHT kommentieren und NICHT erneut aufführen.
 Wenn keine relevanten Auffälligkeiten vorhanden sind, gib ein leeres Array zurück."""
 
 

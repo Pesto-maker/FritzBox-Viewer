@@ -182,11 +182,18 @@ def api_stats(db: Session = Depends(get_db)):
     )
     status = db.query(FetchStatus).filter(FetchStatus.id == 1).first()
 
+    open_problems = (
+        db.query(func.count(AiProblem.id))
+        .filter(AiProblem.status.in_(["pending", "check"]))
+        .scalar()
+    )
+
     return {
         "total": total,
         "by_category": {cat: cnt for cat, cnt in by_category},
         "last_fetch": status.last_fetch.isoformat() if status and status.last_fetch else None,
         "last_error": status.last_error if status else None,
+        "open_problems": open_problems,
     }
 
 
